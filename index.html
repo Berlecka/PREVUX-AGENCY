@@ -1,0 +1,1772 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PREVUX AGENCY - Immobilier & Expertise Foncière en Côte d'Ivoire</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            800: '#1B3B6F',
+                            900: '#0F2C59',
+                            950: '#0A1E3F',
+                        },
+                        gold: {
+                            400: '#FFE066',
+                            500: '#D4AF37',
+                            600: '#B38F24',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- FontAwesome & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet OpenStreetMap CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        
+        @keyframes dynamicCardEntrance {
+            0% {
+                opacity: 0;
+                transform: translateY(20px) scale(0.97);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .animate-card-entry {
+            animation: dynamicCardEntrance 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: translateY(12px) scale(0.99);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .spa-page {
+            display: none;
+            min-height: calc(100vh - 80px);
+        }
+        
+        .spa-page.active {
+            display: block;
+            animation: fadeInScale 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        header.sticky-nav {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        .nav-btn-active {
+            background-color: #0F2C59 !important;
+            color: #FFE066 !important;
+            font-weight: 800 !important;
+            box-shadow: 0 2px 10px rgba(15, 44, 89, 0.2);
+        }
+
+        button, a, .group {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        button:active {
+            transform: scale(0.97);
+        }
+    </style>
+</head>
+<body class="text-slate-800 bg-slate-50 flex flex-col min-h-screen">
+
+    <!-- TOP ANNOUNCEMENT BAR -->
+    <div class="bg-navy-950 text-slate-300 text-xs py-2 px-4 border-b border-navy-800">
+        <div class="max-w-7xl mx-auto flex justify-between items-center flex-wrap gap-2">
+            <div class="flex items-center space-x-4">
+                <span><i class="fa-solid fa-user-tie text-gold-500 mr-1"></i> <strong class="text-white">Gérant:</strong> M. OKANGIN AHI</span>
+                <span class="hidden md:inline"><i class="fa-solid fa-location-dot text-gold-500 mr-1"></i> Abidjan & Intérieur, Côte d'Ivoire</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="tel:+2250505487055" class="hover:text-gold-400"><i class="fa-solid fa-phone text-gold-500 mr-1"></i> +225 05 05 48 70 55</a>
+                <a href="tel:+2250709670701" class="hover:text-gold-400"><i class="fa-solid fa-mobile-screen text-gold-500 mr-1"></i> 07 09 67 07 01</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- NAVBAR -->
+    <header class="sticky-nav bg-white text-navy-950 border-b border-slate-200 backdrop-blur-md bg-opacity-95">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <a href="javascript:void(0)" onclick="navigateTo('home')" class="flex items-center space-x-3 group">
+                    <img src="LOGO.jpeg" alt="Logo PREVUX" class="w-12 h-12 rounded-2xl object-cover border border-gold-500/50 shadow-md group-hover:scale-105 transition">
+                    <div class="flex flex-col justify-center">
+                        <img src="NAME-LOGO.jpeg" alt="PREVUX AGENCY IMMOBILIER & MOBILIER" class="h-7 w-auto object-contain drop-shadow">
+                        <span class="text-[9px] text-slate-500 font-medium tracking-tight uppercase block mt-0.5" data-i18n="slogan">"C'est vous qui validez toujours !!!"</span>
+                    </div>
+                </a>
+
+                <nav class="hidden lg:flex items-center space-x-1">
+                    <button onclick="navigateTo('home')" id="nav-home" class="nav-btn px-4 py-2 rounded-lg text-sm font-semibold text-navy-900 transition hover:text-gold-600 hover:bg-slate-100" data-i18n="nav_home">Accueil</button>
+                    <button onclick="navigateTo('offers')" id="nav-offers" class="nav-btn px-4 py-2 rounded-lg text-sm font-semibold text-navy-900 transition hover:text-gold-600 hover:bg-slate-100" data-i18n="nav_offers">Nos Offres</button>
+                    <button onclick="navigateTo('services')" id="nav-services" class="nav-btn px-4 py-2 rounded-lg text-sm font-semibold text-navy-900 transition hover:text-gold-600 hover:bg-slate-100" data-i18n="nav_services">Services Techniques</button>
+                    <button onclick="navigateTo('submit-request')" id="nav-submit-request" class="nav-btn px-4 py-2 rounded-lg text-sm font-semibold text-navy-900 transition hover:text-gold-600 hover:bg-slate-100" data-i18n="nav_submit">Déposer une Demande</button>
+                    <button onclick="navigateTo('contact')" id="nav-contact" class="nav-btn px-4 py-2 rounded-lg text-sm font-semibold text-navy-900 transition hover:text-gold-600 hover:bg-slate-100" data-i18n="nav_contact">À Propos & Contact</button>
+                </nav>
+
+                <div class="flex items-center space-x-3">
+                    <div class="bg-slate-100 p-1 rounded-lg border border-slate-200 flex items-center">
+                        <button id="lang-fr" onclick="switchLanguage('fr')" class="px-2.5 py-1 text-xs font-bold rounded bg-navy-900 text-gold-400 transition">FR</button>
+                        <button id="lang-en" onclick="switchLanguage('en')" class="px-2.5 py-1 text-xs font-bold rounded text-slate-600 hover:text-navy-900 transition">EN</button>
+                    </div>
+
+                    <button onclick="toggleMobileMenu()" class="lg:hidden text-navy-900 p-2 focus:outline-none text-xl">
+                        <i id="mobile-menu-icon" class="fa-solid fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="mobile-menu" class="hidden lg:hidden bg-white border-t border-slate-200 px-4 pt-2 pb-4 space-y-2 shadow-lg">
+            <button onclick="navigateTo('home'); toggleMobileMenu()" id="mobile-nav-home" class="mobile-nav-btn block w-full text-left px-3 py-2 rounded-md text-base font-medium text-navy-900 hover:bg-slate-100" data-i18n="nav_home">Accueil</button>
+            <button onclick="navigateTo('offers'); toggleMobileMenu()" id="mobile-nav-offers" class="mobile-nav-btn block w-full text-left px-3 py-2 rounded-md text-base font-medium text-navy-900 hover:bg-slate-100" data-i18n="nav_offers">Nos Offres</button>
+            <button onclick="navigateTo('services'); toggleMobileMenu()" id="mobile-nav-services" class="mobile-nav-btn block w-full text-left px-3 py-2 rounded-md text-base font-medium text-navy-900 hover:bg-slate-100" data-i18n="nav_services">Services Techniques</button>
+            <button onclick="navigateTo('submit-request'); toggleMobileMenu()" id="mobile-nav-submit-request" class="mobile-nav-btn block w-full text-left px-3 py-2 rounded-md text-base font-medium text-navy-900 hover:bg-slate-100" data-i18n="nav_submit">Déposer une Demande</button>
+            <button onclick="navigateTo('contact'); toggleMobileMenu()" id="mobile-nav-contact" class="mobile-nav-btn block w-full text-left px-3 py-2 rounded-md text-base font-medium text-navy-900 hover:bg-slate-100" data-i18n="nav_contact">À Propos & Contact</button>
+        </div>
+    </header>
+
+    <!-- MAIN -->
+    <main class="flex-grow">
+
+        <!-- PAGE 1: ACCUEIL -->
+        <section id="page-home" class="spa-page active">
+            <div class="relative bg-navy-950 text-white overflow-hidden py-20 lg:py-28">
+                <div class="absolute inset-0 z-0 opacity-25 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=80');"></div>
+                <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center md:text-left">
+                    <div class="max-w-3xl animate-card-entry opacity-0">
+                        <span class="inline-block px-3 py-1 bg-gold-500 text-navy-950 text-xs font-bold rounded-full uppercase tracking-wider mb-4 shadow" data-i18n="hero_badge">Cabinet Immobilier & Expertise Foncière</span>
+                        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight text-white mb-6">
+                            <span data-i18n="hero_title_1">Sécurisez Vos Investissements</span> <br>
+                            <span class="text-gold-500" data-i18n="hero_title_2">En Côte d'Ivoire</span>
+                        </h1>
+                        <p class="text-lg text-slate-300 mb-8 leading-relaxed" data-i18n="hero_sub">
+                            Terrains sécurisés avec ACD, Villes & Communes (Cocody, Bingerville, Yamoussoukro, etc.), Maisons, Duplex et Accompagnement technique foncier sur-mesure.
+                        </p>
+                        <div class="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+                            <button onclick="navigateTo('offers')" class="px-8 py-4 bg-gold-500 hover:bg-gold-400 text-navy-950 font-extrabold rounded-xl shadow-lg transition hover:-translate-y-0.5 flex items-center justify-center space-x-2">
+                                <span data-i18n="btn_explore_offers">Explorer les Offres</span>
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                            <button onclick="navigateTo('submit-request')" class="px-8 py-4 bg-navy-800 hover:bg-navy-700 text-white font-bold rounded-xl border border-navy-700 shadow-lg transition hover:-translate-y-0.5 flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-paper-plane text-gold-500"></i>
+                                <span data-i18n="btn_submit_request">Proposer / Chercher un bien</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VENTES FLASH SECTION -->
+            <div class="bg-gradient-to-r from-red-900 via-navy-950 to-navy-900 text-white py-12 border-b border-red-800/30">
+                <div class="max-w-7xl mx-auto px-4">
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                        <div>
+                            <span class="inline-flex items-center px-3 py-1 bg-red-600 text-white font-extrabold text-xs rounded-full uppercase tracking-widest animate-pulse mb-2 shadow">
+                                <i class="fa-solid fa-bolt mr-1.5"></i> Vente Flash Exceptionnelle
+                            </span>
+                            <h2 class="text-3xl font-extrabold text-white">Offres Limitées dans le Temps</h2>
+                            <p class="text-xs text-slate-300">Opportunités immobilières sélectionnées avec réduction directe. Validez avant l'expiration !</p>
+                        </div>
+                    </div>
+
+                    <div id="flash-offers-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Rempli dynamiquement -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="max-w-7xl mx-auto px-4 py-16">
+                <div class="flex justify-between items-end mb-10">
+                    <div>
+                        <span class="text-xs font-bold text-gold-600 uppercase tracking-widest" data-i18n="featured_subtitle">Sélection Exclusive</span>
+                        <h2 class="text-3xl font-extrabold text-navy-950" data-i18n="featured_title">Offres Récentes à la Une</h2>
+                    </div>
+                    <button onclick="navigateTo('offers')" class="text-navy-900 font-bold hover:text-gold-600 flex items-center space-x-1 transition hover:translate-x-1">
+                        <span data-i18n="view_all">Voir tout le catalogue</span>
+                        <i class="fa-solid fa-chevron-right text-xs"></i>
+                    </button>
+                </div>
+
+                <div id="featured-properties-container" class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Dynamic -->
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE 2: NOS OFFRES -->
+        <section id="page-offers" class="spa-page">
+            <div class="bg-navy-900 text-white py-12 px-4 mb-8">
+                <div class="max-w-7xl mx-auto text-center">
+                    <h1 class="text-3xl font-extrabold mb-3" data-i18n="offers_page_title">Catalogue des Biens Immobilier & Foncier</h1>
+                    <p class="text-slate-300 text-sm max-w-2xl mx-auto" data-i18n="offers_page_subtitle">Explorez nos parcelles, terrains constructibles, entrepôts, villas et locaux commercialisés en Côte d'Ivoire.</p>
+                </div>
+            </div>
+
+            <div class="max-w-7xl mx-auto px-4 pb-16">
+                <div class="bg-white rounded-2xl shadow-md p-6 border border-slate-200 mb-8">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1" data-i18n="filter_type">Type de Bien</label>
+                            <select id="filter-type" onchange="applyFilters()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm font-medium focus:ring-2 focus:ring-navy-900 transition">
+                                <option value="ALL">Tous les types</option>
+                                <option value="Terrain Nu">Terrain Nu</option>
+                                <option value="Parcelle">Parcelle (Hectares)</option>
+                                <option value="Plantation">Plantation (Hévéa / Palmier)</option>
+                                <option value="Villa Basse">Villa Basse</option>
+                                <option value="Villa Duplex">Villa Duplex</option>
+                                <option value="Villa Triplex">Villa Triplex</option>
+                                <option value="Appartement Studio">Studio</option>
+                                <option value="Appartement 2 Pièces">Appartement 2 Pièces</option>
+                                <option value="Appartement 3 Pièces">Appartement 3 Pièces</option>
+                                <option value="Appartement 4 Pièces">Appartement 4 Pièces</option>
+                                <option value="Appartement 5 Pièces et plus">Appartement 5 Pièces et plus</option>
+                                <option value="Magasin">Magasin</option>
+                                <option value="Entrepôt">Entrepôt</option>
+                                <option value="Immeuble">Immeuble / Investissement</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1" data-i18n="filter_city">Commune / Ville</label>
+                            <select id="filter-city" onchange="applyFilters()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm font-medium focus:ring-2 focus:ring-navy-900 transition">
+                                <option value="ALL">Toutes les zones</option>
+                                <option value="Cocody">Cocody</option>
+                                <option value="Bingerville">Bingerville</option>
+                                <option value="Yopougon">Yopougon</option>
+                                <option value="Grand-Bassam">Grand-Bassam</option>
+                                <option value="Yamoussoukro">Yamoussoukro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1" data-i18n="filter_doc">Document Foncier</label>
+                            <select id="filter-doc" onchange="applyFilters()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm font-medium focus:ring-2 focus:ring-navy-900 transition">
+                                <option value="ALL">Tous les documents</option>
+                                <option value="ACD">ACD (Arrêté de Concession Définitive)</option>
+                                <option value="Attestation Villageoise">Attestation Villageoise</option>
+                                <option value="Titre Foncier">Titre Foncier</option>
+                            </select>
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="resetFilters()" class="w-full bg-gold-500 hover:bg-gold-400 text-navy-950 font-black py-2.5 px-4 rounded-lg text-sm transition hover:shadow flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-eye"></i>
+                                <span>Voir tout</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="all-offers-container" class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Dynamic -->
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE 3: FICHE DÉTAILLÉE -->
+        <section id="page-detail" class="spa-page">
+            <div class="max-w-7xl mx-auto px-4 py-8">
+                <button onclick="navigateTo('offers')" class="mb-6 inline-flex items-center text-sm font-bold text-navy-900 hover:text-gold-600 transition">
+                    <i class="fa-solid fa-arrow-left mr-2"></i>
+                    <span data-i18n="back_to_offers">Retour au catalogue</span>
+                </button>
+
+                <div id="detail-page-content" class="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+                    <!-- Dynamic -->
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE 4: SERVICES TECHNIQUES -->
+        <section id="page-services" class="spa-page">
+            <div class="bg-navy-900 text-white py-12 px-4 mb-10">
+                <div class="max-w-7xl mx-auto text-center">
+                    <h1 class="text-3xl font-extrabold mb-3" data-i18n="services_page_title">Nos Services Techniques & Expertise Foncière</h1>
+                    <p class="text-slate-300 text-sm max-w-2xl mx-auto" data-i18n="services_page_subtitle">Accompagnement rigoureux, audits techniques et sécurisation juridique foncière sous la direction de M. OKANGIN AHI.</p>
+                </div>
+            </div>
+
+            <div class="max-w-7xl mx-auto px-4 pb-16">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                    <div class="bg-white p-8 rounded-2xl shadow-md border border-slate-200 hover:shadow-lg transition">
+                        <div class="w-14 h-14 bg-navy-900 text-gold-500 rounded-xl flex items-center justify-center text-2xl font-bold mb-6">
+                            <i class="fa-solid fa-magnifying-glass-chart"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-navy-950 mb-3" data-i18n="serv1_title">Audits & Vérifications Foncières</h3>
+                        <p class="text-slate-600 text-sm mb-4 leading-relaxed" data-i18n="serv1_desc">Vérification de la régularité des documents auprès du Cadastre, du Ministère de la Construction et des communautés villageoises avant tout achat.</p>
+                    </div>
+
+                    <div class="bg-white p-8 rounded-2xl shadow-md border border-slate-200 hover:shadow-lg transition">
+                        <div class="w-14 h-14 bg-navy-900 text-gold-500 rounded-xl flex items-center justify-center text-2xl font-bold mb-6">
+                            <i class="fa-solid fa-mountain-city"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-navy-950 mb-3" data-i18n="serv2_title">Études de Sol & Géotechnique</h3>
+                        <p class="text-slate-600 text-sm mb-4 leading-relaxed" data-i18n="serv2_desc">Analyses géotechniques pour déterminer la portance des terrains et assurer la pérennité de vos projets de construction de bâtiments.</p>
+                    </div>
+
+                    <div class="bg-white p-8 rounded-2xl shadow-md border border-slate-200 hover:shadow-lg transition">
+                        <div class="w-14 h-14 bg-navy-900 text-gold-500 rounded-xl flex items-center justify-center text-2xl font-bold mb-6">
+                            <i class="fa-solid fa-map-location-dot"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-navy-950 mb-3" data-i18n="serv3_title">Aménagement Foncier & Bornage</h3>
+                        <p class="text-slate-600 text-sm mb-4 leading-relaxed" data-i18n="serv3_desc">Lotissement, viabilisation, ouvertures de voies et opérations de bornage contradictoire géomètre pour valoriser vos parcelles.</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-100 rounded-2xl p-8 border border-slate-200 max-w-3xl mx-auto shadow-sm">
+                    <h3 class="text-2xl font-bold text-navy-950 mb-2 text-center" data-i18n="quote_form_title">Demander un Devis Technique</h3>
+                    <form onsubmit="handleQuoteSubmit(event)" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1" data-i18n="form_name">Nom & Prénoms *</label>
+                                <input type="text" required class="w-full bg-white border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-navy-900 transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1" data-i18n="form_phone">Téléphone / WhatsApp *</label>
+                                <input type="tel" required placeholder="+225..." class="w-full bg-white border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-navy-900 transition">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1" data-i18n="form_service">Service Concerné</label>
+                            <select class="w-full bg-white border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-navy-900 transition">
+                                <option>Audit de Titre Foncier / ACD</option>
+                                <option>Étude de Sol Géotechnique</option>
+                                <option>Bornage Géomètre & Aménagement</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block text-xs font-bold text-slate-700" data-i18n="form_details">Détails de la demande</label>
+                                <button type="button" onclick="startVoiceDictation('service-details-input', this)" class="text-xs text-navy-900 font-bold hover:text-gold-600 flex items-center space-x-1 border px-2 py-1 rounded-md bg-white shadow-sm transition">
+                                    <i class="fa-solid fa-microphone text-red-500"></i>
+                                    <span class="dictate-btn-text">Dictée Vocale</span>
+                                </button>
+                            </div>
+                            <textarea id="service-details-input" rows="4" placeholder="Décrivez votre besoin..." class="w-full bg-white border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-navy-900 transition"></textarea>
+                        </div>
+
+                        <button type="submit" class="w-full bg-navy-900 hover:bg-navy-800 text-white font-bold py-3 px-6 rounded-xl transition shadow-md">
+                            <span>Envoyer la demande de devis</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE 5: DÉPOSER UNE DEMANDE & AUTOMATISATION -->
+        <section id="page-submit-request" class="spa-page">
+            <div class="bg-navy-900 text-white py-12 px-4 mb-10">
+                <div class="max-w-7xl mx-auto text-center">
+                    <h1 class="text-3xl font-extrabold mb-3" data-i18n="submit_page_title">Déposer une Demande ou Proposer un Bien</h1>
+                    <p class="text-slate-300 text-sm max-w-2xl mx-auto">Recherche ciblée ou proposition de bien avec mise en relation et suggestion automatique d'offres.</p>
+                </div>
+            </div>
+
+            <div class="max-w-4xl mx-auto px-4 pb-16">
+                <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-8">
+                    <div class="flex border-b border-slate-200 mb-6">
+                        <button onclick="switchSubmitTab('search')" id="tab-btn-search" class="py-3 px-6 font-bold text-sm border-b-2 border-navy-900 text-navy-900 active transition">Je cherche un bien</button>
+                        <button onclick="switchSubmitTab('sell')" id="tab-btn-sell" class="py-3 px-6 font-bold text-sm text-slate-400 hover:text-navy-900 transition">Je propose un bien</button>
+                    </div>
+
+                    <form id="form-search-property" onsubmit="handleSearchRequestSubmit(event)" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Nom & Prénom *</label>
+                                <input type="text" id="search-client-name" required class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-sm transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Téléphone / WhatsApp *</label>
+                                <input type="tel" id="search-client-phone" required placeholder="+225..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-sm transition">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Type de Bien recherché</label>
+                                <select id="search-type" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-sm transition">
+                                    <option value="Terrain Nu">Terrain Nu</option>
+                                    <option value="Parcelle">Parcelle (Hectares)</option>
+                                    <option value="Plantation">Plantation (Hévéa / Palmier)</option>
+                                    <option value="Villa Basse">Villa Basse</option>
+                                    <option value="Villa Duplex">Villa Duplex</option>
+                                    <option value="Villa Triplex">Villa Triplex</option>
+                                    <option value="Appartement Studio">Studio</option>
+                                    <option value="Appartement 2 Pièces">Appartement 2 Pièces</option>
+                                    <option value="Appartement 3 Pièces">Appartement 3 Pièces</option>
+                                    <option value="Appartement 4 Pièces">Appartement 4 Pièces</option>
+                                    <option value="Appartement 5 Pièces et plus">Appartement 5 Pièces et plus</option>
+                                    <option value="Magasin">Magasin</option>
+                                    <option value="Entrepôt">Entrepôt</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Budget estimé (FCFA)</label>
+                                <input type="text" id="search-budget" placeholder="Ex: 20 000 000 FCFA" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-sm transition">
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block text-xs font-bold text-slate-700">Critères spécifiques / Commune</label>
+                                <button type="button" onclick="startVoiceDictation('search-criteria-input', this)" class="text-xs text-navy-900 font-bold hover:text-gold-600 flex items-center space-x-1 border px-2 py-1 rounded-md bg-white shadow-sm transition">
+                                    <i class="fa-solid fa-microphone text-red-500"></i>
+                                    <span class="dictate-btn-text">Dictée Vocale</span>
+                                </button>
+                            </div>
+                            <textarea id="search-criteria-input" rows="3" placeholder="Ex: Cocody, superficie min 500m²..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-sm transition"></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-gold-500 hover:bg-gold-400 text-navy-950 font-extrabold py-3.5 px-6 rounded-xl transition shadow hover:-translate-y-0.5">
+                            Lancer la recherche automatique & Transmettre à l'agence
+                        </button>
+                    </form>
+
+                    <form id="form-sell-property" onsubmit="handleSellRequestSubmit(event)" class="space-y-4 hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Nom du propriétaire ou vendeur *</label>
+                                <input type="text" id="sell-owner-name" required class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-sm transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">WhatsApp de contact *</label>
+                                <input type="tel" id="sell-owner-phone" required placeholder="+225..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-sm transition">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Type de bien proposé</label>
+                                <select id="sell-prop-type" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-sm transition">
+                                    <option value="Terrain Nu">Terrain Nu</option>
+                                    <option value="Parcelle">Parcelle (Hectares)</option>
+                                    <option value="Plantation">Plantation (Hévéa / Palmier)</option>
+                                    <option value="Villa Basse">Villa Basse</option>
+                                    <option value="Villa Duplex">Villa Duplex</option>
+                                    <option value="Villa Triplex">Villa Triplex</option>
+                                    <option value="Appartement Studio">Studio</option>
+                                    <option value="Appartement 2 Pièces">Appartement 2 Pièces</option>
+                                    <option value="Appartement 3 Pièces">Appartement 3 Pièces</option>
+                                    <option value="Appartement 4 Pièces">Appartement 4 Pièces</option>
+                                    <option value="Appartement 5 Pièces et plus">Appartement 5 Pièces et plus</option>
+                                    <option value="Magasin">Magasin</option>
+                                    <option value="Entrepôt">Entrepôt</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Commune / Ville</label>
+                                <input id="sell-prop-city" type="text" required placeholder="Ex: Bingerville" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-sm transition">
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block text-xs font-bold text-slate-700">Description détaillée du bien (ou dictée vocale)</label>
+                                <button type="button" onclick="startVoiceDictation('sell-desc-input', this)" class="text-xs text-navy-900 font-bold hover:text-gold-600 flex items-center space-x-1 border px-2 py-1 rounded-md bg-white shadow-sm transition">
+                                    <i class="fa-solid fa-microphone text-red-500"></i>
+                                    <span class="dictate-btn-text">Dictée Vocale</span>
+                                </button>
+                            </div>
+                            <textarea id="sell-desc-input" rows="4" placeholder="Décrivez votre terrain ou bien à confier à l'agence..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-sm transition"></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-navy-900 hover:bg-navy-800 text-gold-500 font-extrabold py-3.5 px-6 rounded-xl transition shadow hover:-translate-y-0.5">
+                            Lancer l'analyse automatique & proposer mon bien
+                        </button>
+                    </form>
+
+                    <div id="robot-matching-result" class="mt-6 hidden p-6 bg-slate-50 border border-slate-200 rounded-2xl animate-fade-in">
+                        <!-- Rempli par JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PAGE 6: À PROPOS & CONTACT -->
+        <section id="page-contact" class="spa-page">
+            <div class="bg-navy-900 text-white py-12 px-4 mb-10">
+                <div class="max-w-7xl mx-auto text-center">
+                    <h1 class="text-3xl font-extrabold mb-3" data-i18n="contact_page_title">À Propos & Nous Contacter</h1>
+                    <p class="text-slate-300 text-sm max-w-2xl mx-auto" data-i18n="contact_page_subtitle">Un interlocuteur privilégié pour vos investissements fonciers en toute sérénité.</p>
+                </div>
+            </div>
+
+            <div class="max-w-7xl mx-auto px-4 pb-16 space-y-12">
+
+                <!-- 1. SECTION LES 12 DOMAINES D'EXPERTISE OFFICIELS -->
+                <div class="bg-white rounded-2xl shadow-md border border-slate-200 p-8">
+                    <div class="text-center max-w-2xl mx-auto mb-8">
+                        <span class="text-xs font-bold text-gold-600 uppercase tracking-widest">Nos 12 Domaines d'Intervention Officiels</span>
+                        <h3 class="text-2xl font-extrabold text-navy-950 mt-1">L'Expertise Globale PREVUX AGENCY</h3>
+                        <p class="text-xs text-slate-500 mt-1">Cliquez sur un domaine pour ouvrir sa fiche détaillée et découvrir notre accompagnement sur-mesure.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                        
+                        <!-- Bouton 1 : Audits & Études -->
+                        <button onclick="openDomainModal(0)" class="text-left bg-slate-50 p-5 rounded-xl border border-slate-200 hover:border-gold-500 hover:shadow-md transition group flex flex-col justify-between h-full">
+                            <div>
+                                <div class="w-10 h-10 bg-navy-900 text-gold-500 rounded-lg flex items-center justify-center font-bold mb-3 shadow group-hover:scale-110 transition">
+                                    <i class="fa-solid fa-helmet-safety"></i>
+                                </div>
+                                <h4 class="font-extrabold text-navy-950 text-sm mb-1.5 group-hover:text-gold-600 transition">1. Audits & Études de Sol</h4>
+                                <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed">Études de stabilité de structure et de sol, portance et prévention des risques géotechniques.</p>
+                            </div>
+                            <span class="text-[11px] font-bold text-navy-900 mt-3 inline-flex items-center group-hover:translate-x-1 transition">
+                                <span>Voir les détails</span> <i class="fa-solid fa-chevron-right text-[9px] ml-1"></i>
+                            </span>
+                        </button>
+
+                        <!-- Bouton 2 : Conseil & Intermédiation -->
+                        <button onclick="openDomainModal(1)" class="text-left bg-slate-50 p-5 rounded-xl border border-slate-200 hover:border-gold-500 hover:shadow-md transition group flex flex-col justify-between h-full">
+                            <div>
+                                <div class="w-10 h-10 bg-navy-900 text-gold-500 rounded-lg flex items-center justify-center font-bold mb-3 shadow group-hover:scale-110 transition">
+                                    <i class="fa-solid fa-handshake"></i>
+                                </div>
+                                <h4 class="font-extrabold text-navy-950 text-sm mb-1.5 group-hover:text-gold-600 transition">2. Conseil & Intermédiation</h4>
+                                <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed">Accompagnement stratégique, courtage et mise en relation entre investisseurs et vendeurs.</p>
+                            </div>
+                            <span class="text-[11px] font-bold text-navy-900 mt-3 inline-flex items-center group-hover:translate-x-1 transition">
+                                <span>Voir les détails</span> <i class="fa-solid fa-chevron-right text-[9px] ml-1"></i>
+                            </span>
+                        </button>
+
+                        <!-- Bouton 3 : Négoce & Matériaux -->
+                        <button onclick="openDomainModal(2)" class="text-left bg-slate-50 p-5 rounded-xl border border-slate-200 hover:border-gold-500 hover:shadow-md transition group flex flex-col justify-between h-full">
+                            <div>
+                                <div class="w-10 h-10 bg-navy-900 text-gold-500 rounded-lg flex items-center justify-center font-bold mb-3 shadow group-hover:scale-110 transition">
+                                    <i class="fa-solid fa-boxes-stacked"></i>
+                                </div>
+                                <h4 class="font-extrabold text-navy-950 text-sm mb-1.5 group-hover:text-gold-600 transition">3. Négoce & Matériaux</h4>
+                                <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed">Achat, vente, importation et distribution de matériaux et équipements de construction.</p>
+                            </div>
+                            <span class="text-[11px] font-bold text-navy-900 mt-3 inline-flex items-center group-hover:translate-x-1 transition">
+                                <span>Voir les détails</span> <i class="fa-solid fa-chevron-right text-[9px] ml-1"></i>
+                            </span>
+                        </button>
+
+                        <!-- Bouton 4 : Transactions -->
+                        <button onclick="openDomainModal(3)" class="text-left bg-slate-50 p-5 rounded-xl border border-slate-200 hover:border-gold-500 hover:shadow-md transition group flex flex-col justify-between h-full">
+                            <div>
+                                <div class="w-10 h-10 bg-navy-900 text-gold-500 rounded-lg flex items-center justify-center font-bold mb-3 shadow group-hover:scale-110 transition">
+                                    <i class="fa-solid fa-file-contract"></i>
+                                </div>
+                                <h4 class="font-extrabold text-navy-950 text-sm mb-1.5 group-hover:text-gold-600 transition">4. Transactions Immobilier</h4>
+                                <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed">Achat, vente, location, cession et valorisation de biens immobiliers et terrains bâtis/non bâtis.</p>
+                            </div>
+                            <span class="text-[11px] font-bold text-navy-900 mt-3 inline-flex items-center group-hover:translate-x-1 transition">
+                                <span>Voir les détails</span> <i class="fa-solid fa-chevron-right text-[9px] ml-1"></i>
+                            </span>
+                        </button>
+
+                        <!-- Bouton 5 : Gestion Immobilière de Luxe -->
+                        <button onclick="openDomainModal(4)" class="text-left bg-slate-50 p-5 rounded-xl border border-slate-200 hover:border-gold-500 hover:shadow-md transition group flex flex-col justify-between h-full">
+                            <div>
+                                <div class="w-10 h-10 bg-navy-900 text-gold-500 rounded-lg flex items-center justify-center font-bold mb-3 shadow group-hover:scale-110 transition">
+                                    <i class="fa-solid fa-crown"></i>
+                                </div>
+                                <h4 class="font-extrabold text-navy-950 text-sm mb-1.5 group-hover:text-gold-600 transition">5. Gestion Immobilière de Luxe</h4>
+                                <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed">Administration haut de gamme, maintenance et services VIP pour résidences premium.</p>
+                            </div>
+                            <span class="text-[11px] font-bold text-navy-900 mt-3 inline-flex items-center group-hover:translate-x-1 transition">
+                                <span>Voir les détails</span> <i class="fa-solid fa-chevron-right text-[9px] ml-1"></i>
+                            </span>
+                        </button>
+
+                        <!-- Bouton 6 : Aménagement & Amendement Foncier -->
+                        <button onclick="openDomainModal(5)" class="text-left bg-slate-50 p-5 rounded-xl border border-slate-200 hover:border-gold-500 hover:shadow-md transition group flex flex-col justify-between h-full">
+                            <div>
+                                <div class="w-10 h-10 bg-navy-900 text-gold-500 rounded-lg flex items-center justify-center font-bold mb-3 shadow group-hover:scale-110 transition">
+                                    <i class="fa-solid fa-file-shield"></i>
+                                </div>
+                                <h4 class="font-extrabold text-navy-950 text-sm mb-1.5 group-hover:text-gold-600 transition">6. Aménagement & Amendement</h4>
+                                <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed">Régularisation des titres, identification parcellaire, restructuration et aménagement.</p>
+                            </div>
+                            <span class="text-[11px] font-bold text-navy-900 mt-3 inline-flex items-center group-hover:translate-x-1 transition">
+                                <span>Voir les détails</span> <i class="fa-solid fa-chevron-right text-[9px] ml-1"></i>
+                            </span>
+                        </button>
+
+                        <!-- Bouton 7 : Marketing & Visuel Pro -->
+                        <button onclick="openDomainModal(6)" class="text-left bg-slate-50 p-5 rounded-xl border border-slate-200 hover:border-gold-500 hover:shadow-md transition group flex flex-col justify-between h-full">
+                            <div>
+                                <div class="w-10 h-10 bg-navy-900 text-gold-500 rounded-lg flex items-center justify-center font-bold mb-3 shadow group-hover:scale-110 transition">
+                                    <i class="fa-solid fa-bullhorn"></i>
+                                </div>
+                                <h4 class="font-extrabold text-navy-950 text-sm mb-1.5 group-hover:text-gold-600 transition">7. Marketing & Visuel Pro</h4>
+                                <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed">Stratégies marketing, shooting pro, tournages et campagnes digitales pour vos biens.</p>
+                            </div>
+                            <span class="text-[11px] font-bold text-navy-900 mt-3 inline-flex items-center group-hover:translate-x-1 transition">
+                                <span>Voir les détails</span> <i class="fa-solid fa-chevron-right text-[9px] ml-1"></i>
+                            </span>
+                        </button>
+
+                        <!-- Bouton 8 : Financement -->
+                        <button onclick="openDomainModal(7)" class="text-left bg-slate-50 p-5 rounded-xl border border-slate-200 hover:border-gold-500 hover:shadow-md transition group flex flex-col justify-between h-full">
+                            <div>
+                                <div class="w-10 h-10 bg-navy-900 text-gold-500 rounded-lg flex items-center justify-center font-bold mb-3 shadow group-hover:scale-110 transition">
+                                    <i class="fa-solid fa-sack-dollar"></i>
+                                </div>
+                                <h4 class="font-extrabold text-navy-950 text-sm mb-1.5 group-hover:text-gold-600 transition">8. Financement Immobilier</h4>
+                                <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed">Recherche de financements, montage de dossiers et relation avec banques et fonds.</p>
+                            </div>
+                            <span class="text-[11px] font-bold text-navy-900 mt-3 inline-flex items-center group-hover:translate-x-1 transition">
+                                <span>Voir les détails</span> <i class="fa-solid fa-chevron-right text-[9px] ml-1"></i>
+                            </span>
+                        </button>
+
+                        <!-- Bouton 9 : Trading -->
+                        <button onclick="openDomainModal(8)" class="text-left bg-slate-50 p-5 rounded-xl border border-slate-200 hover:border-gold-500 hover:shadow-md transition group flex flex-col justify-between h-full">
+                            <div>
+                                <div class="w-10 h-10 bg-navy-900 text-gold-500 rounded-lg flex items-center justify-center font-bold mb-3 shadow group-hover:scale-110 transition">
+                                    <i class="fa-solid fa-chart-line"></i>
+                                </div>
+                                <h4 class="font-extrabold text-navy-950 text-sm mb-1.5 group-hover:text-gold-600 transition">9. Trading Immobilier</h4>
+                                <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed">Arbitrage, négociation et opportunités d'investissement sur le marché immobilier.</p>
+                            </div>
+                            <span class="text-[11px] font-bold text-navy-900 mt-3 inline-flex items-center group-hover:translate-x-1 transition">
+                                <span>Voir les détails</span> <i class="fa-solid fa-chevron-right text-[9px] ml-1"></i>
+                            </span>
+                        </button>
+
+                        <!-- Bouton 10 : Formations & Conférences -->
+                        <button onclick="openDomainModal(9)" class="text-left bg-slate-50 p-5 rounded-xl border border-slate-200 hover:border-gold-500 hover:shadow-md transition group flex flex-col justify-between h-full">
+                            <div>
+                                <div class="w-10 h-10 bg-navy-900 text-gold-500 rounded-lg flex items-center justify-center font-bold mb-3 shadow group-hover:scale-110 transition">
+                                    <i class="fa-solid fa-graduation-cap"></i>
+                                </div>
+                                <h4 class="font-extrabold text-navy-950 text-sm mb-1.5 group-hover:text-gold-600 transition">10. Formations & Conférences</h4>
+                                <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed">Séminaires, conférences et programmes de renforcement de capacités dans le foncier.</p>
+                            </div>
+                            <span class="text-[11px] font-bold text-navy-900 mt-3 inline-flex items-center group-hover:translate-x-1 transition">
+                                <span>Voir les détails</span> <i class="fa-solid fa-chevron-right text-[9px] ml-1"></i>
+                            </span>
+                        </button>
+
+                        <!-- Bouton 11 : Commerce Général -->
+                        <button onclick="openDomainModal(10)" class="text-left bg-slate-50 p-5 rounded-xl border border-slate-200 hover:border-gold-500 hover:shadow-md transition group flex flex-col justify-between h-full">
+                            <div>
+                                <div class="w-10 h-10 bg-navy-900 text-gold-500 rounded-lg flex items-center justify-center font-bold mb-3 shadow group-hover:scale-110 transition">
+                                    <i class="fa-solid fa-store"></i>
+                                </div>
+                                <h4 class="font-extrabold text-navy-950 text-sm mb-1.5 group-hover:text-gold-600 transition">11. Commerce Général</h4>
+                                <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed">Import-export, distribution et représentation de biens et services de toute nature.</p>
+                            </div>
+                            <span class="text-[11px] font-bold text-navy-900 mt-3 inline-flex items-center group-hover:translate-x-1 transition">
+                                <span>Voir les détails</span> <i class="fa-solid fa-chevron-right text-[9px] ml-1"></i>
+                            </span>
+                        </button>
+
+                        <!-- Bouton 12 : Divers -->
+                        <button onclick="openDomainModal(11)" class="text-left bg-slate-50 p-5 rounded-xl border border-slate-200 hover:border-gold-500 hover:shadow-md transition group flex flex-col justify-between h-full">
+                            <div>
+                                <div class="w-10 h-10 bg-navy-900 text-gold-500 rounded-lg flex items-center justify-center font-bold mb-3 shadow group-hover:scale-110 transition">
+                                    <i class="fa-solid fa-shapes"></i>
+                                </div>
+                                <h4 class="font-extrabold text-navy-950 text-sm mb-1.5 group-hover:text-gold-600 transition">12. Divers & Opérations Connexes</h4>
+                                <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed">Toutes opérations se rattachant directement ou indirectement à l'objet social.</p>
+                            </div>
+                            <span class="text-[11px] font-bold text-navy-900 mt-3 inline-flex items-center group-hover:translate-x-1 transition">
+                                <span>Voir les détails</span> <i class="fa-solid fa-chevron-right text-[9px] ml-1"></i>
+                            </span>
+                        </button>
+
+                    </div>
+                </div>
+
+                <!-- 2. PRESENTATION DE L'AGENCE ET FORMULAIRE DE CONTACT DIRECT -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    <div>
+                        <div class="bg-white p-8 rounded-2xl shadow-md border border-slate-200 mb-8">
+                            <h2 class="text-2xl font-bold text-navy-950 mb-4">PREVUX AGENCY</h2>
+                            <p class="text-slate-600 text-sm mb-6 leading-relaxed" data-i18n="about_text">
+                                Spécialiste reconnu de la transaction immobilière et de l'expertise foncière en Côte d'Ivoire, PREVUX AGENCY vous accompagne dans l'acquisition de terrains sécurisés (ACD), la vente de biens immobiliers et la réalisation d'études techniques.
+                            </p>
+                            <div class="space-y-4">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-10 h-10 bg-navy-100 text-navy-900 rounded-lg flex items-center justify-center font-bold">
+                                        <i class="fa-solid fa-user-tie"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-slate-500 font-bold">Gérant / Principal Manager</div>
+                                        <div class="font-extrabold text-navy-950">M. OKANGIN AHI</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-10 h-10 bg-navy-100 text-navy-900 rounded-lg flex items-center justify-center font-bold">
+                                        <i class="fa-solid fa-phone"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-slate-500 font-bold">Lignes Directes</div>
+                                        <div class="font-bold text-slate-800">+225 05 05 48 70 55 / 07 09 67 07 01</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-8 rounded-2xl shadow-md border border-slate-200">
+                        <h3 class="text-xl font-bold text-navy-950 mb-4">Envoyer un message direct</h3>
+                        <form onsubmit="handleDirectContactSubmit(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Votre Nom</label>
+                                <input type="text" id="direct-contact-name" required class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-sm transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Numéro de Téléphone</label>
+                                <input type="tel" id="direct-contact-phone" required class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-sm transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Message</label>
+                                <textarea id="direct-contact-msg" rows="4" required class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-sm transition"></textarea>
+                            </div>
+                            <button type="submit" class="w-full bg-navy-900 hover:bg-navy-800 text-white font-bold py-3 rounded-xl transition shadow">
+                                Envoyer le message
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODALE DES DETAILS D'UN DOMAINE D'EXPERTISE (POP-UP) -->
+    <div id="domain-modal" class="fixed inset-0 bg-navy-950/80 backdrop-blur-sm z-[2500] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-2xl w-full p-6 md:p-8 relative animate-card-entry max-h-[90vh] overflow-y-auto">
+            <button onclick="closeDomainModal()" class="absolute top-4 right-4 text-slate-400 hover:text-red-500 text-2xl font-bold transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="flex items-center space-x-4 mb-4">
+                <div id="domain-modal-icon" class="w-12 h-12 bg-navy-900 text-gold-500 rounded-xl flex items-center justify-center font-bold text-xl shadow">
+                    <i class="fa-solid fa-info"></i>
+                </div>
+                <div>
+                    <span class="text-xs font-bold text-gold-600 uppercase tracking-wider block">Objet Social Officiel - PREVUX AGENCY</span>
+                    <h3 id="domain-modal-title" class="text-xl font-extrabold text-navy-950">Titre du domaine</h3>
+                </div>
+            </div>
+            <div id="domain-modal-body" class="text-slate-600 text-sm leading-relaxed border-t border-slate-100 pt-4 mb-6 space-y-3">
+                <!-- Contenu rempli dynamiquement par JS -->
+            </div>
+            <div class="flex flex-col sm:flex-row gap-3 border-t border-slate-100 pt-4">
+                <a href="https://wa.me/2250505487055?text=Bonjour%20M.%20OKANGIN%20AHI,%20je%20souhaite%20des%20informations%20sur%20votre%20expertise%20concernant:" id="domain-modal-wa-btn" target="_blank" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl text-xs transition flex items-center justify-center space-x-2 shadow">
+                    <i class="fa-brands fa-whatsapp text-base"></i>
+                    <span>Solliciter cette expertise via WhatsApp</span>
+                </a>
+                <button onclick="closeDomainModal()" class="w-full sm:w-1/3 bg-slate-100 hover:bg-slate-200 text-navy-900 font-bold py-3 rounded-xl text-xs transition">
+                    Fermer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LIGHTBOX MODAL -->
+    <div id="lightbox-modal" class="fixed inset-0 bg-black/95 z-[2000] hidden flex flex-col md:flex-row items-center justify-between p-4 md:p-8">
+        <button onclick="closeLightbox()" class="absolute top-4 right-4 text-white text-3xl font-bold hover:text-red-500 z-50">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        
+        <div class="relative w-full md:w-3/4 h-3/5 md:h-full flex items-center justify-center">
+            <button onclick="prevLightboxImage()" class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/50 text-white w-12 h-12 rounded-full flex items-center justify-center text-xl z-10 backdrop-blur">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            
+            <img id="lightbox-img" src="" class="max-h-full max-w-full object-contain rounded-lg">
+            
+            <button onclick="nextLightboxImage()" class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/50 text-white w-12 h-12 rounded-full flex items-center justify-center text-xl z-10 backdrop-blur">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        </div>
+
+        <div class="w-full md:w-1/4 bg-navy-950 border-t md:border-t-0 md:border-l border-navy-800 p-6 text-white flex flex-col justify-between h-2/5 md:h-full rounded-2xl md:rounded-none">
+            <div>
+                <span id="lightbox-counter" class="text-xs font-bold text-gold-400 block mb-2">IMAGE 1 / 1</span>
+                <h3 id="lightbox-title" class="font-extrabold text-lg text-white mb-2">Titre du bien</h3>
+                <div class="text-xl font-black text-gold-500 mb-4" id="lightbox-price">Prix</div>
+                
+                <div class="space-y-2 text-xs text-slate-300 border-t border-navy-800 pt-4">
+                    <div><strong class="text-white">Superficie :</strong> <span id="lightbox-surface">-</span></div>
+                    <div><strong class="text-white">Nombre de pièces :</strong> <span id="lightbox-rooms">-</span></div>
+                    <div><strong class="text-white">Disponibilité :</strong> <span id="lightbox-status" class="px-2 py-0.5 rounded bg-green-900 text-green-300 font-bold">Disponible</span></div>
+                    <div><strong class="text-white">Interlocuteur :</strong> M. OKANGIN AHI</div>
+                </div>
+            </div>
+
+            <div class="pt-6">
+                <a id="lightbox-whatsapp-btn" href="#" target="_blank" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3.5 rounded-xl text-xs transition flex items-center justify-center space-x-2">
+                    <i class="fa-brands fa-whatsapp text-lg"></i>
+                    <span>Contacter M. OKANGIN AHI</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- FLOATING WHATSAPP -->
+    <a href="https://wa.me/2250505487055?text=Bonjour%20PREVUX%20AGENCY,%20je%20souhaite%20plus%20d'informations." target="_blank" rel="noopener noreferrer" class="fixed bottom-6 right-6 z-50 bg-green-500 hover:bg-green-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-110">
+        <i class="fa-brands fa-whatsapp text-3xl"></i>
+    </a>
+
+    <!-- FOOTER -->
+    <footer class="bg-navy-950 text-slate-400 text-xs py-12 border-t border-navy-800">
+        <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            <div>
+                <h4 class="text-white font-extrabold text-base mb-3">PREVUX AGENCY</h4>
+                <p class="leading-relaxed mb-3">L'excellence foncière et la garantie transactionnelle immobilière en Côte d'Ivoire.</p>
+                <div class="text-gold-500 font-bold">"C'est vous qui validez toujours !!!"</div>
+            </div>
+            <div>
+                <h4 class="text-white font-bold mb-3">Navigation Rapide</h4>
+                <ul class="space-y-2">
+                    <li><a href="javascript:void(0)" onclick="navigateTo('home')" class="hover:text-white transition">Accueil</a></li>
+                    <li><a href="javascript:void(0)" onclick="navigateTo('offers')" class="hover:text-white transition">Catalogue des Offres</a></li>
+                    <li><a href="javascript:void(0)" onclick="navigateTo('services')" class="hover:text-white transition">Services Techniques</a></li>
+                    <li><a href="javascript:void(0)" onclick="navigateTo('contact')" class="hover:text-white transition">Contact & Urgences</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="text-white font-bold mb-3">Contacts Officiels</h4>
+                <p class="mb-1">Gérant: M. OKANGIN AHI</p>
+                <p class="mb-1">Tél: +225 05 05 48 70 55 / 07 09 67 07 01</p>
+                <p>Abidjan, Côte d'Ivoire</p>
+            </div>
+        </div>
+        <div class="max-w-7xl mx-auto px-4 text-center border-t border-navy-900 pt-6">
+            &copy; 2026 PREVUX AGENCY. Tous droits réservés.
+        </div>
+    </footer>
+
+    <!-- SCRIPT APPLICATION -->
+    <script>
+        // CONFIGURATION SUPABASE DIRECTE (Injectée proprement)
+        const SUPABASE_URL = "https://aofwqglbflatkuvhaevm.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_Tt5HwNpxtY4p3vED3M90AA_2PVXsTaf";
+        const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+        const nowMs = Date.now();
+        let defaultProperties = [
+            {
+                id: 'prop-1',
+                title: 'Parcelle Sécurisée 500m² avec ACD',
+                type: 'Terrain Nu',
+                transaction: 'Vente',
+                city: 'Bingerville',
+                price: '18 000 000 FCFA',
+                surface: '500 m²',
+                rooms: '-',
+                doc: 'ACD',
+                docRef: 'ACD N° 2023-4521',
+                status: 'Disponible',
+                images: ['https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80'],
+                videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+                coords: [5.3550, -3.8860],
+                featured: true,
+                isFlash: true,
+                flashPrice: '16 500 000 FCFA',
+                flashExpiry: new Date(nowMs + 48 * 3600 * 1000).toISOString().slice(0, 16),
+                flashMediaLink: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                description: 'Magnifique parcelle plate prête pour construction immédiate située dans un quartier résidentiel en pleine expansion à Bingerville. Document ACD disponible à la vérification.'
+            },
+            {
+                id: 'prop-2',
+                title: 'Villa Duplex HAUT STANDING 5 Pièces',
+                type: 'Villa Duplex',
+                transaction: 'Vente',
+                city: 'Cocody',
+                price: '145 000 000 FCFA',
+                surface: '450 m²',
+                rooms: '5 Pièces',
+                doc: 'Titre Foncier',
+                docRef: 'TF N° 10842',
+                status: 'Disponible',
+                images: ['https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=80'],
+                videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+                coords: [5.3600, -3.9600],
+                featured: true,
+                isFlash: true,
+                flashPrice: '135 000 000 FCFA',
+                flashExpiry: new Date(nowMs + 18 * 3600 * 1000).toISOString().slice(0, 16),
+                flashMediaLink: 'https://www.tiktok.com',
+                description: 'Somptueuse villa duplex neuve avec piscine, garage 3 véhicules, suite parentale avec dressing, cuisine équipée et finitions italiennes à Cocody Angré.'
+            },
+            {
+                id: 'prop-3',
+                title: 'Magasin Bord de Voie 80m²',
+                type: 'Magasin',
+                transaction: 'Cession',
+                city: 'Yopougon',
+                price: '12 000 000 FCFA',
+                surface: '80 m²',
+                rooms: '1 Pièce + Mezzanine',
+                doc: 'ACD',
+                docRef: 'ACD N° 2022-1102',
+                status: 'Disponible',
+                images: ['https://images.unsplash.com/photo-1628624747186-a941c476b7ef?auto=format&fit=crop&w=800&q=80'],
+                videoUrl: '',
+                coords: [5.3400, -4.0800],
+                featured: true,
+                isFlash: false,
+                description: 'Magasin commercial idéalement situé avec forte visibilité à Yopougon, comprenant une mezzanine aménagée.'
+            }
+        ];
+
+        let propertiesData = JSON.parse(localStorage.getItem('prevux_properties')) || defaultProperties;
+        let clientRequestsData = JSON.parse(localStorage.getItem('prevux_requests')) || [];
+
+        // Récupération asynchrone des biens depuis Supabase
+        async function fetchPropertiesFromSupabase() {
+            if (!supabase) return;
+            try {
+                const { data, error } = await supabase.from('properties').select('*');
+                if (!error && data && data.length > 0) {
+                    propertiesData = data.map(item => ({
+                        id: item.id,
+                        title: item.title,
+                        type: item.type,
+                        transaction: item.transaction,
+                        city: item.city,
+                        price: item.price,
+                        surface: item.surface,
+                        rooms: item.rooms,
+                        doc: item.doc,
+                        docRef: item.doc_ref || item.docRef,
+                        status: item.status,
+                        images: Array.isArray(item.images) ? item.images : JSON.parse(item.images || '[]'),
+                        videoUrl: item.video_url || item.videoUrl || '',
+                        coords: Array.isArray(item.coords) ? item.coords : JSON.parse(item.coords || '[5.35, -4.00]'),
+                        featured: item.featured,
+                        isFlash: item.is_flash || item.isFlash,
+                        flashPrice: item.flash_price || item.flashPrice,
+                        flashExpiry: item.flash_expiry || item.flashExpiry,
+                        flashMediaLink: item.flash_media_link || item.flashMediaLink,
+                        description: item.description
+                    }));
+                    localStorage.setItem('prevux_properties', JSON.stringify(propertiesData));
+                    renderFlashOffers();
+                    renderFeaturedProperties();
+                }
+            } catch (err) {
+                console.warn("Mode local de secours actif :", err);
+            }
+        }
+
+        async function saveRequestToSupabase(reqObj) {
+            if (!supabase) return;
+            try {
+                await supabase.from('client_requests').insert([{
+                    kind: reqObj.kind,
+                    name: reqObj.name,
+                    phone: reqObj.phone,
+                    type: reqObj.type,
+                    budget: reqObj.budget || '',
+                    city: reqObj.city || '',
+                    details: reqObj.details || ''
+                }]);
+            } catch (err) {
+                console.warn("Erreur d'enregistrement Supabase :", err);
+            }
+        }
+
+        function saveRequestsToStorage() {
+            localStorage.setItem('prevux_requests', JSON.stringify(clientRequestsData));
+        }
+
+        // DONNEES EXPLICATIVES DÉTAILLÉES DES 12 DOMAINES D'EXPERTISE
+        const officialDomainsData = [
+            {
+                title: "1. Audits & Études de stabilité de structure et de sol",
+                icon: "fa-helmet-safety",
+                description: "<p>Les études de stabilité de structure et de sol visent à évaluer la sécurité, la résistance et la conformité des ouvrages ainsi que la fiabilité du terrain qui les supporte.</p><p>Elles consistent à analyser l’état des fondations, des matériaux, la portance du sol, les charges appliquées et les éventuels risques structurels ou géotechniques.</p><p>Ces diagnostics permettent d’identifier les faiblesses, de prévenir les dégradations, et de recommander les solutions techniques adaptées pour garantir la durabilité, la performance et la conformité réglementaire des bâtiments ou projets d’aménagement.</p>"
+            },
+            {
+                title: "2. Conseils & Intermédiation",
+                icon: "fa-handshake",
+                description: "<p>Prestations de conseil en matière immobilière, foncière, financière, technique, commerciale ou organisationnelle ; accompagnement des clients dans la planification, la gestion et l’optimisation de leurs projets immobiliers.</p><p>Mise en relation qualifiée entre vendeurs, acheteurs, bailleurs, locataires, promoteurs et investisseurs ; activités de courtage et d’intermédiation commerciale dans le domaine immobilier et foncier.</p>"
+            },
+            {
+                title: "3. Négoce & Matériaux de Construction",
+                icon: "fa-boxes-stacked",
+                description: "<p>Achat, vente, importation, exportation et distribution de matériaux, équipements, produits et services liés au bâtiment, à la construction, à l’aménagement et à l’exploitation immobilière.</p><p>Approvisionnement ciblé et fourniture de matériel professionnel certifié pour les chantiers publics et privés.</p>"
+            },
+            {
+                title: "4. Transactions Immobilières",
+                icon: "fa-file-contract",
+                description: "<p>Réalisation de toutes opérations d’achat, vente, location, cession, acquisition ou valorisation de biens immobiliers, terrains, propriétés bâties ou non bâties sur l'ensemble du territoire ivoirien.</p><p>Garantie transactionnelle, sécurisation des règlements et suivi juridique complet jusqu'à la signature finale.</p>"
+            },
+            {
+                title: "5. Gestion Immobilière de Luxe",
+                icon: "fa-crown",
+                description: "<p>Prestations haut de gamme de gestion, maintenance, entretien et administration de biens résidentiels et commerciaux premium.</p><p>Services VIP dédiés aux propriétaires, investisseurs ou résidents de prestige (conciergerie immobilière, gestion locative personnalisée, révisons périodiques).</p>"
+            },
+            {
+                title: "6. Aménagement & Amendement Foncier",
+                icon: "fa-file-shield",
+                description: "<p>Études, procédures et interventions liées à la régularisation foncière, la mise en conformité des titres (ACD, Titres Fonciers), l’identification parcellaire, la division, la fusion ou la restructuration de terrains.</p><p>Opérations d'aménagement foncier, viabilisation, ouverture de voies et valorisation durable de grandes parcelles.</p>"
+            },
+            {
+                title: "7. Marketing & Visuel Professionnel",
+                icon: "fa-bullhorn",
+                description: "<p>Conception et mise en œuvre de stratégies marketing immobilières ciblées ; promotion, publicité, communication digitale et commerciale.</p><p>Shooting professionnel de haute définition, captations vidéo par drone, visites virtuelles immersives et campagnes publicitaires multi-canaux pour maximiser l'attractivité de vos biens.</p>"
+            },
+            {
+                title: "8. Financement Immobilier",
+                icon: "fa-sack-dollar",
+                description: "<p>Accompagnement personnalisé dans la recherche de financements immobiliers ; montage complet de dossiers de crédit ; analyse financière de rentabilité.</p><p>Mise en relation directe avec les établissements bancaires, institutions financières, fonds d’investissement ou partenaires financiers de premier plan.</p>"
+            },
+            {
+                title: "9. Trading Immobilier",
+                icon: "fa-chart-line",
+                description: "<p>Activités de trading non réglementées et compatibles avec l’objet immobilier : négociation stratégique et arbitrage de biens, d'actifs ou de valeurs immobilières.</p><p>Opérations connexes autorisées relatives aux marchés immobiliers, opportunités d'achats groupés et reventes d'actifs matériels liés.</p>"
+            },
+            {
+                title: "10. Formations & Conférences",
+                icon: "fa-graduation-cap",
+                description: "<p>Organisation de séminaires, conférences, formations académiques, ateliers et programmes de renforcement de capacités.</p><p>Mise en place de modules spécialisés dans les domaines immobilier, foncier, commercial, financier, technique et entrepreneurial pour professionnels et investisseurs.</p>"
+            },
+            {
+                title: "11. Commerce Général",
+                icon: "fa-store",
+                description: "<p>Le commerce général, l’importation, l’exportation, la distribution et la représentation de biens et services de toute nature connectés aux besoins immobiliers et urbains.</p><p>Représentation commerciale de marques partenaires et négoce généraliste d'équipements annexes.</p>"
+            },
+            {
+                title: "12. Divers & Opérations Connexes",
+                icon: "fa-shapes",
+                description: "<p>Et, plus généralement, toutes opérations pouvant se rattacher directement ou indirectement à l’objet social ou facilitant sa réalisation, sans dénaturer le caractère immobilier et commercial de l’entreprise PREVUX AGENCY.</p>"
+            }
+        ];
+
+        function openDomainModal(index) {
+            const domain = officialDomainsData[index];
+            if (!domain) return;
+
+            document.getElementById('domain-modal-title').textContent = domain.title;
+            document.getElementById('domain-modal-icon').innerHTML = `<i class="fa-solid ${domain.icon}"></i>`;
+            document.getElementById('domain-modal-body').innerHTML = domain.description;
+
+            const waBtn = document.getElementById('domain-modal-wa-btn');
+            waBtn.href = `https://wa.me/2250505487055?text=Bonjour%20M.%20OKANGIN%20AHI,%20je%20souhaite%20des%20informations%20sur%20votre%20expertise:%20${encodeURIComponent(domain.title)}`;
+
+            document.getElementById('domain-modal').classList.remove('hidden');
+        }
+
+        function closeDomainModal() {
+            document.getElementById('domain-modal').classList.add('hidden');
+        }
+
+        let translations = {
+            fr: {
+                slogan: '"C\'est vous qui validez toujours !!!"',
+                nav_home: 'Accueil',
+                nav_offers: 'Nos Offres',
+                nav_services: 'Services Techniques',
+                nav_submit: 'Déposer une Demande',
+                nav_contact: 'À Propos & Contact',
+                hero_badge: 'Cabinet Immobilier & Expertise Foncière',
+                hero_title_1: 'Sécurisez Vos Investissements',
+                hero_title_2: 'En Côte d\'Ivoire',
+                hero_sub: 'Terrains sécurisés avec ACD, Villes & Communes (Cocody, Bingerville, Yamoussoukro, etc.), Maisons, Duplex et Accompagnement technique foncier sur-mesure.',
+                btn_explore_offers: 'Explorer les Offres',
+                btn_submit_request: 'Proposer / Chercher un bien',
+                featured_subtitle: 'Sélection Exclusive',
+                featured_title: 'Offres Récentes à la Une',
+                view_all: 'Voir tout le catalogue',
+                offers_page_title: 'Catalogue des Biens Immobilier & Foncier',
+                offers_page_subtitle: 'Explorez nos parcelles, terrains constructibles, entrepôts, villas et locaux commercialisés en Côte d\'Ivoire.',
+                filter_type: 'Type de Bien',
+                filter_city: 'Commune / Ville',
+                filter_doc: 'Document Foncier',
+                services_page_title: 'Nos Services Techniques & Expertise Foncière',
+                services_page_subtitle: 'Accompagnement rigoureux, audits techniques et sécurisation juridique foncière sous la direction de M. OKANGIN AHI.',
+                quote_form_title: 'Demander un Devis Technique',
+                submit_page_title: 'Déposer une Demande ou Proposer un Bien',
+                contact_page_title: 'À Propos & Nous Contacter',
+                about_text: 'Spécialiste reconnu de la transaction immobilière et de l\'expertise foncière en Côte d\'Ivoire...',
+                back_to_offers: 'Retour au catalogue'
+            },
+            en: {
+                slogan: '"You are always the one who validates !!!"',
+                nav_home: 'Home',
+                nav_offers: 'Properties',
+                nav_services: 'Technical Services',
+                nav_submit: 'Submit Request',
+                nav_contact: 'About & Contact',
+                hero_badge: 'Real Estate & Land Expertise Agency',
+                hero_title_1: 'Secure Your Investments',
+                hero_title_2: 'In Ivory Coast',
+                hero_sub: 'Secured plots with ACD titles, prime municipalities...',
+                btn_explore_offers: 'Explore Catalog',
+                btn_submit_request: 'Submit / Request Property',
+                featured_subtitle: 'Exclusive Selection',
+                featured_title: 'Featured Properties',
+                view_all: 'View full catalog',
+                offers_page_title: 'Real Estate & Property Catalog',
+                offers_page_subtitle: 'Browse plots, building land, warehouses, villas...',
+                filter_type: 'Property Type',
+                filter_city: 'City / Municipality',
+                filter_doc: 'Land Document',
+                services_page_title: 'Technical Services & Land Expertise',
+                services_page_subtitle: 'Rigorous support, technical audits...',
+                quote_form_title: 'Request a Technical Quote',
+                submit_page_title: 'Submit a Request or Offer Property',
+                contact_page_title: 'About & Contact Us',
+                about_text: 'Recognized specialist in real estate transactions...',
+                back_to_offers: 'Back to catalog'
+            }
+        };
+
+        let currentLang = 'fr';
+        let leafletMapInstance = null;
+        let activeDictationRecognition = null;
+        let currentLightboxProp = null;
+        let currentLightboxIndex = 0;
+
+        function navigateTo(pageId, extraParam = null) {
+            const pages = document.querySelectorAll('.spa-page');
+            pages.forEach(p => p.classList.remove('active'));
+
+            const targetPage = document.getElementById(`page-${pageId}`);
+            if (targetPage) targetPage.classList.add('active');
+
+            const navButtons = document.querySelectorAll('.nav-btn');
+            navButtons.forEach(btn => btn.classList.remove('nav-btn-active'));
+
+            const activeDesktopBtn = document.getElementById(`nav-${pageId}`);
+            if (activeDesktopBtn) activeDesktopBtn.classList.add('nav-btn-active');
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            if (pageId === 'home') {
+                renderFlashOffers();
+                renderFeaturedProperties();
+            } else if (pageId === 'offers') {
+                renderAllOffers(propertiesData);
+            } else if (pageId === 'detail' && extraParam) {
+                renderPropertyDetail(extraParam);
+            }
+        }
+
+        function toggleMobileMenu() {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        }
+
+        function getFlashTimerBadgeHtml(expiryDateStr) {
+            if (!expiryDateStr) return '<span class="text-[10px] font-bold text-gold-400 bg-navy-950/90 px-2 py-0.5 rounded">Offre Flash</span>';
+            const expiryTime = new Date(expiryDateStr).getTime();
+            const now = Date.now();
+            const diff = expiryTime - now;
+
+            if (diff <= 0) {
+                return '<span class="text-[10px] font-bold text-red-400 bg-black/90 px-2 py-0.5 rounded">Expiré</span>';
+            }
+
+            const hoursRemaining = diff / (1000 * 3600);
+            if (hoursRemaining >= 24) {
+                const days = Math.ceil(hoursRemaining / 24);
+                return `<span class="text-[11px] font-extrabold text-gold-400 bg-navy-950/90 px-2.5 py-1 rounded-md border border-gold-500/30 shadow"><i class="fa-regular fa-clock mr-1"></i> ${days} jour(s) restant(s)</span>`;
+            } else {
+                const h = Math.floor(diff / (1000 * 3600));
+                const m = Math.floor((diff % (1000 * 3600)) / (1000 * 60));
+                const s = Math.floor((diff % (1000 * 60)) / 1000);
+                return `<span class="text-[11px] font-black text-gold-400 bg-navy-950/95 px-2.5 py-1 rounded-md border border-red-500/50 shadow animate-pulse"><i class="fa-solid fa-hourglass-half mr-1 text-red-500"></i> ${String(h).padStart(2,'0')}h : ${String(m).padStart(2,'0')}m : ${String(s).padStart(2,'0')}s</span>`;
+            }
+        }
+
+        function createPropertyCardHtml(prop, index = 0) {
+            if (prop.status === 'Caché') return '';
+            const mainImg = prop.images && prop.images.length > 0 ? prop.images[0] : 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80';
+            const delay = index * 0.08;
+
+            return `
+                <div class="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group flex flex-col animate-card-entry opacity-0" style="animation-delay: ${delay}s;">
+                    <div class="relative h-48 overflow-hidden bg-slate-200 cursor-pointer" onclick="navigateTo('detail', '${prop.id}')">
+                        <img src="${mainImg}" alt="${prop.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                        <span class="absolute top-3 right-3 bg-gold-500 text-navy-950 font-black text-xs px-2.5 py-1 rounded-md shadow">
+                            ${prop.doc}
+                        </span>
+                        <div class="absolute top-3 left-3 flex flex-col space-y-1">
+                            <span class="bg-navy-950/80 backdrop-blur-md text-gold-400 font-bold text-xs px-2.5 py-1 rounded-md">
+                                ${prop.type}
+                            </span>
+                            ${prop.isFlash ? `<div id="flash-timer-${prop.id}">${getFlashTimerBadgeHtml(prop.flashExpiry)}</div>` : ''}
+                        </div>
+                    </div>
+                    <div class="p-5 flex-grow flex flex-col justify-between">
+                        <div>
+                            <div class="text-xs font-bold text-slate-400 mb-1 flex items-center justify-between">
+                                <span><i class="fa-solid fa-location-dot text-gold-500 mr-1"></i> ${prop.city}</span>
+                                <span class="text-navy-900 font-black px-2 py-0.5 rounded bg-slate-100">${prop.status || 'Disponible'}</span>
+                            </div>
+                            <h3 class="font-extrabold text-navy-950 text-base mb-2 group-hover:text-gold-600 transition line-clamp-2 cursor-pointer" onclick="navigateTo('detail', '${prop.id}')">${prop.title}</h3>
+                            <p class="text-xs text-slate-500 line-clamp-2 mb-4">${prop.description}</p>
+                        </div>
+                        <div>
+                            <div class="text-lg font-black text-navy-900 mb-4">${prop.isFlash && prop.flashPrice ? prop.flashPrice : prop.price}</div>
+                            <button onclick="navigateTo('detail', '${prop.id}')" class="w-full bg-slate-100 hover:bg-navy-900 hover:text-white text-navy-950 font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center space-x-1">
+                                <span>Plus d'infos</span>
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderFlashOffers() {
+            const container = document.getElementById('flash-offers-container');
+            const flashList = propertiesData.filter(p => p.isFlash && p.status !== 'Caché');
+            if (flashList.length === 0) {
+                container.innerHTML = '<div class="col-span-3 text-center text-slate-300 py-6">Aucune vente flash active pour le moment.</div>';
+                return;
+            }
+            container.innerHTML = flashList.map((prop, idx) => {
+                const delay = idx * 0.08;
+                return `
+                <div class="bg-white text-slate-800 rounded-2xl shadow-xl overflow-hidden border border-gold-500/50 relative flex flex-col transition hover:scale-[1.01] animate-card-entry opacity-0" style="animation-delay: ${delay}s;">
+                    <div class="relative h-56 overflow-hidden bg-slate-900 cursor-pointer" onclick="navigateTo('detail', '${prop.id}')">
+                        <img src="${prop.images[0]}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                        <div class="absolute top-3 left-3 z-10 flex flex-col space-y-1">
+                            <span class="bg-red-600 text-white font-black text-xs px-3 py-1 rounded-full shadow flex items-center w-fit">
+                                <i class="fa-solid fa-bolt mr-1.5 animate-pulse"></i> VENTE FLASH
+                            </span>
+                            <div id="flash-timer-${prop.id}">${getFlashTimerBadgeHtml(prop.flashExpiry)}</div>
+                        </div>
+                    </div>
+                    <div class="p-5 flex-grow flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center text-xs font-bold text-slate-500 mb-1">
+                                <span>${prop.city}</span>
+                                <span class="text-green-600 font-extrabold">${prop.doc}</span>
+                            </div>
+                            <h3 class="font-extrabold text-navy-950 text-base mb-2">${prop.title}</h3>
+                        </div>
+                        <div>
+                            <div class="flex items-baseline space-x-2 mb-3">
+                                <span class="text-2xl font-black text-red-600">${prop.flashPrice || prop.price}</span>
+                                <span class="text-xs text-slate-400 line-through font-semibold">${prop.price}</span>
+                            </div>
+                            
+                            ${prop.flashMediaLink ? `
+                                <a href="${prop.flashMediaLink}" target="_blank" class="mb-3 w-full bg-red-100 hover:bg-red-200 text-red-700 font-bold py-2 rounded-xl text-xs transition flex items-center justify-center space-x-2">
+                                    <i class="fa-solid fa-circle-play text-red-600"></i>
+                                    <span>Voir le Direct / Vidéo (TikTok / YouTube / FB)</span>
+                                </a>
+                            ` : ''}
+
+                            <button onclick="navigateTo('detail', '${prop.id}')" class="w-full bg-navy-950 hover:bg-navy-900 text-gold-400 font-bold py-3 rounded-xl text-xs transition flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-bolt text-gold-500"></i>
+                                <span>Plus d'infos sur l'Offre Flash</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        function updateFlashTimersOnly() {
+            const flashList = propertiesData.filter(p => p.isFlash && p.status !== 'Caché');
+            flashList.forEach(prop => {
+                const timerElem = document.getElementById(`flash-timer-${prop.id}`);
+                if (timerElem) {
+                    timerElem.innerHTML = getFlashTimerBadgeHtml(prop.flashExpiry);
+                }
+            });
+        }
+
+        function renderFeaturedProperties() {
+            const container = document.getElementById('featured-properties-container');
+            const featured = propertiesData.filter(p => p.featured && p.status !== 'Caché');
+            container.innerHTML = featured.map((prop, idx) => createPropertyCardHtml(prop, idx)).join('');
+        }
+
+        function renderAllOffers(data) {
+            const container = document.getElementById('all-offers-container');
+            const visibleData = data.filter(p => p.status !== 'Caché');
+            if (visibleData.length === 0) {
+                container.innerHTML = `<div class="col-span-3 text-center py-12 text-slate-400">Aucun bien ne correspond aux filtres sélectionnés.</div>`;
+                return;
+            }
+            container.innerHTML = visibleData.map((prop, idx) => createPropertyCardHtml(prop, idx)).join('');
+        }
+
+        function renderPropertyDetail(propId) {
+            const prop = propertiesData.find(p => p.id === propId);
+            if (!prop) return;
+
+            const container = document.getElementById('detail-page-content');
+            const topThreeImages = prop.images.slice(0, 3);
+            const remainingImages = prop.images.slice(3);
+
+            let mainImagesHtml = topThreeImages.map((img, idx) => `
+                <div class="relative bg-slate-100 rounded-xl overflow-hidden border border-slate-200 cursor-pointer hover:opacity-95 transition shadow-sm h-64 flex items-center justify-center group" onclick="openLightbox('${prop.id}', ${idx})">
+                    <img src="${img}" alt="${prop.title} - ${idx+1}" class="max-h-full max-w-full object-contain group-hover:scale-105 transition duration-300">
+                    <span class="absolute bottom-2 right-2 bg-navy-950/80 text-white text-[10px] font-bold px-2 py-0.5 rounded">Plein écran ${idx+1}/${prop.images.length}</span>
+                </div>
+            `).join('');
+
+            let scrollableBarHtml = '';
+            if (remainingImages.length > 0) {
+                let extraCards = remainingImages.map((img, idx) => {
+                    const actualIdx = idx + 3;
+                    return `
+                        <div class="flex-shrink-0 w-36 h-28 bg-slate-100 rounded-lg overflow-hidden border border-slate-200 cursor-pointer hover:opacity-90 transition relative flex items-center justify-center group" onclick="openLightbox('${prop.id}', ${actualIdx})">
+                            <img src="${img}" class="max-h-full max-w-full object-contain group-hover:scale-105 transition">
+                            <span class="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded">${actualIdx + 1}/${prop.images.length}</span>
+                        </div>
+                    `;
+                }).join('');
+
+                scrollableBarHtml = `
+                    <div class="mt-4">
+                        <div class="text-xs font-bold text-slate-500 mb-2">Autres photos (${remainingImages.length}) - Faites défiler horizontalement :</div>
+                        <div class="flex space-x-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-navy-900">
+                            ${extraCards}
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = `
+                <div class="p-6 md:p-10 animate-card-entry">
+                    <div class="flex flex-wrap justify-between items-start gap-4 mb-6">
+                        <div>
+                            <span class="inline-block bg-navy-100 text-navy-900 font-bold text-xs px-3 py-1 rounded-full mb-2">${prop.type} - ${prop.transaction || 'Vente'}</span>
+                            <h1 class="text-2xl md:text-4xl font-black text-navy-950">${prop.title}</h1>
+                            <p class="text-sm text-slate-500 flex items-center mt-1">
+                                <i class="fa-solid fa-location-dot text-gold-500 mr-2"></i> Commune de ${prop.city}, Côte d'Ivoire
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs text-slate-400 font-bold">Prix ${prop.isFlash ? 'Flash Promotionnel' : 'Offre'}</div>
+                            <div class="text-2xl md:text-3xl font-black ${prop.isFlash ? 'text-red-600' : 'text-navy-900'}">${prop.isFlash && prop.flashPrice ? prop.flashPrice : prop.price}</div>
+                            ${prop.isFlash && prop.flashPrice ? `<div class="text-xs text-slate-400 line-through">Prix standard: ${prop.price}</div>` : ''}
+                            <span class="inline-block bg-green-100 text-green-800 text-xs font-bold px-2.5 py-0.5 rounded mt-1">Document: ${prop.doc} ${prop.docRef ? `(${prop.docRef})` : ''}</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-8">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-lg font-bold text-navy-950"><i class="fa-solid fa-images text-gold-500 mr-2"></i>Galerie Photos (${prop.images.length} images)</h3>
+                            ${prop.flashMediaLink ? `
+                                <a href="${prop.flashMediaLink}" target="_blank" class="text-xs font-bold bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg transition">
+                                    <i class="fa-solid fa-video mr-1"></i> Direct / Vidéo Offre
+                                </a>
+                            ` : ''}
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            ${mainImagesHtml}
+                        </div>
+
+                        ${scrollableBarHtml}
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div class="md:col-span-2 space-y-6">
+                            <div>
+                                <h3 class="text-lg font-bold text-navy-950 mb-2">Description du Bien</h3>
+                                <p class="text-slate-600 text-sm leading-relaxed mb-4">${prop.description}</p>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+                                    <div><strong class="text-slate-400 block">Superficie:</strong> ${prop.surface || 'N/A'}</div>
+                                    <div><strong class="text-slate-400 block">Pièces:</strong> ${prop.rooms || 'N/A'}</div>
+                                    <div><strong class="text-slate-400 block">Statut:</strong> ${prop.status || 'Disponible'}</div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between items-center mb-3">
+                                    <h3 class="text-lg font-bold text-navy-950">Géolocalisation & Itinéraire (${prop.city})</h3>
+                                    <a href="https://www.google.com/maps/search/?api=1&query=${prop.coords[0]},${prop.coords[1]}" target="_blank" class="text-xs font-bold bg-navy-900 text-gold-500 px-3 py-1.5 rounded-lg hover:bg-navy-800 transition">
+                                        <i class="fa-solid fa-route mr-1"></i> Google Maps
+                                    </a>
+                                </div>
+                                <div id="leaflet-map" class="h-64 rounded-xl border border-slate-200 z-0"></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 h-fit shadow-sm">
+                            <h4 class="font-bold text-navy-950 text-base mb-4">Interlocuteur Dédié</h4>
+                            <div class="flex items-center space-x-3 mb-4">
+                                <div class="w-12 h-12 bg-navy-900 text-gold-500 rounded-full flex items-center justify-center font-bold text-xl shadow">
+                                    <i class="fa-solid fa-user-tie"></i>
+                                </div>
+                                <div>
+                                    <div class="font-black text-navy-950">M. OKANGIN AHI</div>
+                                    <div class="text-xs text-slate-500">Gérant PREVUX AGENCY</div>
+                                </div>
+                            </div>
+                            <a href="https://wa.me/2250505487055?text=Bonjour%20M.%20OKANGIN%20AHI,%20je%20souhaite%20des%20informations%20sur%20l'offre:%20${encodeURIComponent(prop.title)}" target="_blank" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl text-xs transition flex items-center justify-center space-x-2 shadow">
+                                <i class="fa-brands fa-whatsapp text-base"></i>
+                                <span>Échanger sur WhatsApp</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            setTimeout(() => {
+                if (leafletMapInstance) leafletMapInstance.remove();
+                leafletMapInstance = L.map('leaflet-map').setView(prop.coords, 14);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; OpenStreetMap'
+                }).addTo(leafletMapInstance);
+                L.marker(prop.coords).addTo(leafletMapInstance).bindPopup(`<b>${prop.title}</b><br>${prop.city}`).openPopup();
+            }, 300);
+        }
+
+        function openLightbox(propId, index) {
+            const prop = propertiesData.find(p => p.id === propId);
+            if (!prop) return;
+
+            currentLightboxProp = prop;
+            currentLightboxIndex = index;
+
+            updateLightboxContent();
+            document.getElementById('lightbox-modal').classList.remove('hidden');
+        }
+
+        function updateLightboxContent() {
+            if (!currentLightboxProp) return;
+            const images = currentLightboxProp.images;
+            const imgElem = document.getElementById('lightbox-img');
+            imgElem.src = images[currentLightboxIndex];
+
+            document.getElementById('lightbox-counter').textContent = `IMAGE ${currentLightboxIndex + 1} / ${images.length}`;
+            document.getElementById('lightbox-title').textContent = currentLightboxProp.title;
+            document.getElementById('lightbox-price').textContent = currentLightboxProp.isFlash && currentLightboxProp.flashPrice ? currentLightboxProp.flashPrice : currentLightboxProp.price;
+            document.getElementById('lightbox-surface').textContent = currentLightboxProp.surface || 'Non spécifiée';
+            document.getElementById('lightbox-rooms').textContent = currentLightboxProp.rooms || 'N/A';
+            document.getElementById('lightbox-status').textContent = currentLightboxProp.status || 'Disponible';
+
+            const waBtn = document.getElementById('lightbox-whatsapp-btn');
+            waBtn.href = `https://wa.me/2250505487055?text=Bonjour%20M.%20OKANGIN%20AHI,%20concernant%20l'offre%20${encodeURIComponent(currentLightboxProp.title)}`;
+        }
+
+        function prevLightboxImage() {
+            if (!currentLightboxProp) return;
+            currentLightboxIndex = (currentLightboxIndex - 1 + currentLightboxProp.images.length) % currentLightboxProp.images.length;
+            updateLightboxContent();
+        }
+
+        function nextLightboxImage() {
+            if (!currentLightboxProp) return;
+            currentLightboxIndex = (currentLightboxIndex + 1) % currentLightboxProp.images.length;
+            updateLightboxContent();
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox-modal').classList.add('hidden');
+        }
+
+        function applyFilters() {
+            const type = document.getElementById('filter-type').value;
+            const city = document.getElementById('filter-city').value;
+            const doc = document.getElementById('filter-doc').value;
+
+            const filtered = propertiesData.filter(p => {
+                return (type === 'ALL' || p.type === type) &&
+                       (city === 'ALL' || p.city === city) &&
+                       (doc === 'ALL' || p.doc === doc);
+            });
+            renderAllOffers(filtered);
+        }
+
+        function resetFilters() {
+            document.getElementById('filter-type').value = 'ALL';
+            document.getElementById('filter-city').value = 'ALL';
+            document.getElementById('filter-doc').value = 'ALL';
+            renderAllOffers(propertiesData);
+        }
+
+        function startVoiceDictation(targetInputId, btnElem) {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                alert("La dictée vocale n'est pas supportée sur ce navigateur.");
+                return;
+            }
+
+            const inputElem = document.getElementById(targetInputId);
+            const btnText = btnElem.querySelector('.dictate-btn-text');
+
+            if (activeDictationRecognition) {
+                activeDictationRecognition.stop();
+                activeDictationRecognition = null;
+                if (btnText) btnText.textContent = "Dictée Vocale";
+                return;
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'fr-FR';
+            recognition.continuous = true;
+            recognition.interimResults = false;
+
+            activeDictationRecognition = recognition;
+            if (btnText) btnText.textContent = "Écoute en cours...";
+            recognition.start();
+
+            recognition.onresult = function(event) {
+                let finalTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript + ' ';
+                    }
+                }
+                if (finalTranscript.trim()) {
+                    inputElem.value += (inputElem.value ? ' ' : '') + finalTranscript.trim();
+                }
+            };
+            recognition.onerror = recognition.onend = function() {
+                if (btnText) btnText.textContent = "Dictée Vocale";
+                activeDictationRecognition = null;
+            };
+        }
+
+        function switchSubmitTab(tab) {
+            const searchBtn = document.getElementById('tab-btn-search');
+            const sellBtn = document.getElementById('tab-btn-sell');
+            const searchForm = document.getElementById('form-search-property');
+            const sellForm = document.getElementById('form-sell-property');
+            const robotResult = document.getElementById('robot-matching-result');
+
+            robotResult.classList.add('hidden');
+
+            if (tab === 'search') {
+                searchBtn.className = "py-3 px-6 font-bold text-sm border-b-2 border-navy-900 text-navy-900 active transition";
+                sellBtn.className = "py-3 px-6 font-bold text-sm text-slate-400 hover:text-navy-900 transition";
+                searchForm.classList.remove('hidden');
+                sellForm.classList.add('hidden');
+            } else {
+                sellBtn.className = "py-3 px-6 font-bold text-sm border-b-2 border-navy-900 text-navy-900 active transition";
+                searchBtn.className = "py-3 px-6 font-bold text-sm text-slate-400 hover:text-navy-900 transition";
+                sellForm.classList.remove('hidden');
+                searchForm.classList.add('hidden');
+            }
+        }
+
+        async function handleSearchRequestSubmit(e) {
+            e.preventDefault();
+            const clientName = document.getElementById('search-client-name').value;
+            const clientPhone = document.getElementById('search-client-phone').value;
+            const searchType = document.getElementById('search-type').value;
+            const searchBudget = document.getElementById('search-budget').value || 'Non spécifié';
+            const criteriaText = document.getElementById('search-criteria-input').value.toLowerCase();
+
+            const newReq = {
+                id: 'req-' + Date.now(),
+                date: new Date().toLocaleDateString('fr-FR'),
+                kind: 'Recherche Client',
+                name: clientName,
+                phone: clientPhone,
+                type: searchType,
+                budget: searchBudget,
+                details: criteriaText
+            };
+            clientRequestsData.unshift(newReq);
+            saveRequestsToStorage();
+            await saveRequestToSupabase(newReq);
+
+            const matches = propertiesData.filter(p => {
+                if (p.status === 'Caché') return false;
+                const matchesType = p.type === searchType;
+                const matchesText = criteriaText && (p.city.toLowerCase().includes(criteriaText) || p.title.toLowerCase().includes(criteriaText) || p.description.toLowerCase().includes(criteriaText));
+                return matchesType || matchesText;
+            });
+
+            const robotDiv = document.getElementById('robot-matching-result');
+            robotDiv.classList.remove('hidden');
+
+            if (matches.length > 0) {
+                robotDiv.innerHTML = `
+                    <div class="flex items-center space-x-3 mb-3">
+                        <div class="w-10 h-10 bg-green-600 text-white rounded-full flex items-center justify-center font-bold shadow"><i class="fa-solid fa-robot"></i></div>
+                        <div>
+                            <h4 class="font-extrabold text-navy-950 text-sm">🤖 Robot PREVUX : Offres correspondantes trouvées !</h4>
+                            <p class="text-xs text-slate-500">Basé sur vos critères, voici ${matches.length} bien(s) disponible(s) immédiatement :</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                        ${matches.slice(0, 2).map(m => `
+                            <div class="bg-white p-3 rounded-xl border border-slate-200 flex items-center space-x-3 cursor-pointer hover:shadow-md transition" onclick="navigateTo('detail', '${m.id}')">
+                                <img src="${m.images[0]}" class="w-16 h-16 object-cover rounded-lg">
+                                <div>
+                                    <div class="font-bold text-xs text-navy-950 line-clamp-1">${m.title}</div>
+                                    <div class="text-[11px] text-gold-600 font-black">${m.price}</div>
+                                    <div class="text-[10px] text-slate-400"><i class="fa-solid fa-location-dot text-gold-500"></i> ${m.city}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <p class="text-xs text-slate-600 font-medium">Votre demande a également été transmise avec succès à M. OKANGIN AHI. Un conseiller va vous recontacter par WhatsApp.</p>
+                `;
+            } else {
+                robotDiv.innerHTML = `
+                    <div class="flex items-center space-x-3 mb-3">
+                        <div class="w-10 h-10 bg-navy-900 text-gold-500 rounded-full flex items-center justify-center font-bold shadow"><i class="fa-solid fa-robot"></i></div>
+                        <div>
+                            <h4 class="font-extrabold text-navy-950 text-sm">🤖 Robot PREVUX : Recherche en cours...</h4>
+                            <p class="text-xs text-slate-500">Aucune correspondance exacte n'est affichée dans l'immédiat pour ces critères spécifiques.</p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-600 mb-2">Votre demande a été enregistrée. Notre équipe analyse votre dossier pour vous proposer des biens exclusifs hors catalogue.</p>
+                `;
+            }
+
+            e.target.reset();
+        }
+
+        async function handleSellRequestSubmit(e) {
+            e.preventDefault();
+            const propType = document.getElementById('sell-prop-type').value;
+            const propCity = document.getElementById('sell-prop-city').value.toLowerCase();
+            const desc = document.getElementById('sell-desc-input').value.toLowerCase();
+            const ownerName = document.getElementById('sell-owner-name').value;
+            const ownerPhone = document.getElementById('sell-owner-phone').value;
+
+            const newProposal = {
+                id: 'req-' + Date.now(),
+                date: new Date().toLocaleDateString('fr-FR'),
+                kind: 'Proposition Vendeur',
+                name: ownerName,
+                phone: ownerPhone,
+                type: propType,
+                city: document.getElementById('sell-prop-city').value,
+                details: document.getElementById('sell-desc-input').value
+            };
+            clientRequestsData.unshift(newProposal);
+            saveRequestsToStorage();
+            await saveRequestToSupabase(newProposal);
+
+            const matches = propertiesData.filter(p => 
+                p.status !== 'Caché' && (p.type === propType || p.city.toLowerCase().includes(propCity) || desc.includes(p.city.toLowerCase()))
+            );
+
+            const robotDiv = document.getElementById('robot-matching-result');
+            robotDiv.classList.remove('hidden');
+
+            if (matches.length > 0) {
+                robotDiv.innerHTML = `
+                    <div class="flex items-center space-x-3 mb-3">
+                        <div class="w-10 h-10 bg-green-600 text-white rounded-full flex items-center justify-center font-bold shadow"><i class="fa-solid fa-robot"></i></div>
+                        <div>
+                            <h4 class="font-extrabold text-navy-950 text-sm">🤖 Analyse du Robot PREVUX : Biens similaires trouvés !</h4>
+                            <p class="text-xs text-slate-500">Nous avons identifié ${matches.length} offre(s) similaire(s) dans notre catalogue.</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                        ${matches.slice(0, 2).map(m => `
+                            <div class="bg-white p-3 rounded-xl border border-slate-200 flex items-center space-x-3 cursor-pointer hover:shadow-md transition" onclick="navigateTo('detail', '${m.id}')">
+                                <img src="${m.images[0]}" class="w-16 h-16 object-cover rounded-lg">
+                                <div>
+                                    <div class="font-bold text-xs text-navy-950 line-clamp-1">${m.title}</div>
+                                    <div class="text-[11px] text-gold-600 font-black">${m.price}</div>
+                                    <div class="text-[10px] text-slate-400">${m.city}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <p class="text-xs text-slate-600 font-medium">Votre proposition a également été transmise à l'administrateur. Un agent vous recontactera rapidement pour l'évaluation et la mise en ligne.</p>
+                `;
+            } else {
+                robotDiv.innerHTML = `
+                    <div class="flex items-center space-x-3 mb-3">
+                        <div class="w-10 h-10 bg-navy-900 text-gold-500 rounded-full flex items-center justify-center font-bold shadow"><i class="fa-solid fa-robot"></i></div>
+                        <div>
+                            <h4 class="font-extrabold text-navy-950 text-sm">🤖 Analyse du Robot PREVUX</h4>
+                            <p class="text-xs text-slate-500">Bien pris en compte pour estimation.</p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-600 mb-2">Notre cabinet étudie votre dossier avec attention. Un agent va vous recontacter très rapidement par WhatsApp pour finaliser l'expertise de votre bien.</p>
+                `;
+            }
+        }
+
+        function switchLanguage(lang) {
+            currentLang = lang;
+            document.getElementById('lang-fr').className = lang === 'fr' ? 'px-2.5 py-1 text-xs font-bold rounded bg-navy-900 text-gold-400 transition' : 'px-2.5 py-1 text-xs font-bold rounded text-slate-600 hover:text-navy-900 transition';
+            document.getElementById('lang-en').className = lang === 'en' ? 'px-2.5 py-1 text-xs font-bold rounded bg-navy-900 text-gold-400 transition' : 'px-2.5 py-1 text-xs font-bold rounded text-slate-600 hover:text-navy-900 transition';
+
+            document.querySelectorAll('[data-i18n]').forEach(elem => {
+                const key = elem.getAttribute('data-i18n');
+                if (translations[lang] && translations[lang][key]) {
+                    elem.textContent = translations[lang][key];
+                }
+            });
+        }
+
+        function handleQuoteSubmit(e) {
+            e.preventDefault();
+            alert("Devis technique transmis à M. OKANGIN AHI.");
+            e.target.reset();
+        }
+
+        async function handleDirectContactSubmit(e) {
+            e.preventDefault();
+            const contactReq = {
+                id: 'req-' + Date.now(),
+                date: new Date().toLocaleDateString('fr-FR'),
+                kind: 'Contact Direct',
+                name: document.getElementById('direct-contact-name').value,
+                phone: document.getElementById('direct-contact-phone').value,
+                type: 'Direct',
+                    details: document.getElementById('direct-contact-msg').value
+            };
+            clientRequestsData.unshift(contactReq);
+            saveRequestsToStorage();
+            await saveRequestToSupabase(contactReq);
+
+            alert("Message envoyé !");
+            e.target.reset();
+        }
+
+        function startGlobalTimerInterval() {
+            setInterval(() => {
+                const activePage = document.querySelector('.spa-page.active');
+                if (activePage && activePage.id === 'page-home') {
+                    updateFlashTimersOnly();
+                }
+            }, 1000);
+        }
+
+        window.onload = async function() {
+            navigateTo('home');
+            startGlobalTimerInterval();
+            await fetchPropertiesFromSupabase();
+        };
+    </script>
+</body>
+</html>

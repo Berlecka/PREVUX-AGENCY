@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PREVUX AGENCY - Administration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: { 800: '#1B3B6F', 900: '#0F2C59', 950: '#0A1E3F' },
+                        gold: { 400: '#FFE066', 500: '#D4AF37', 600: '#B38F24' }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- jsPDF et plugin autotable pour la génération propre des PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen">
+
+    <!-- PAGE DE CONNEXION ADMIN -->
+    <div id="page-admin-login" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-8 max-w-md w-full">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-navy-900 text-gold-500 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3 shadow-lg">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h1 class="text-2xl font-black text-navy-950">Administration PREVUX</h1>
+                <p class="text-xs text-slate-500 mt-1">Espace réservé à l'équipe de gestion</p>
+            </div>
+            <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Identifiant (Login)</label>
+                    <input type="text" id="login-user" required placeholder="Ex: admin" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-navy-900 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Mot de passe</label>
+                    <input type="password" id="login-pass" required placeholder="••••••" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-navy-900 transition">
+                </div>
+                <button type="submit" class="w-full bg-navy-900 hover:bg-navy-800 text-gold-500 font-extrabold py-3.5 rounded-xl transition shadow-md">
+                    Se connecter
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- TABLEAU DE BORD ADMIN -->
+    <div id="page-admin-dashboard" class="hidden">
+        <!-- HEADER ADMIN -->
+        <header class="bg-navy-950 text-white border-b border-navy-800 py-4 px-6 sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <img src="LOGO.jpeg" alt="Logo PREVUX" class="w-10 h-10 rounded-xl border border-gold-500">
+                    <div>
+                        <h1 class="font-extrabold text-base leading-none">PREVUX AGENCY</h1>
+                        <span class="text-[10px] text-gold-400 font-semibold">PANNEAU D'ADMINISTRATION</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="openPdfExportModal()" class="px-3 py-1.5 bg-gold-500 hover:bg-gold-400 text-navy-950 rounded-lg text-xs font-black transition shadow">
+                        <i class="fa-solid fa-file-pdf mr-1"></i> Télécharger PDF
+                    </button>
+                    <button onclick="openChangeCredentialsModal()" class="px-3 py-1.5 bg-navy-800 hover:bg-navy-700 text-white rounded-lg text-xs font-bold transition">
+                        <i class="fa-solid fa-key mr-1"></i> Identifiants
+                    </button>
+                    <button onclick="adminLogout()" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold transition">
+                        <i class="fa-solid fa-right-from-bracket mr-1"></i> Déconnexion
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-4 py-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+                <div>
+                    <h2 class="text-2xl font-black text-navy-950">Tableau de bord de gestion</h2>
+                    <p class="text-xs text-slate-500">Gérez les offres immobilières, les ventes flash et consultez les demandes transmises par les prospects.</p>
+                </div>
+                <div class="flex items-center space-x-3 flex-wrap gap-2">
+                    <button onclick="openPdfExportModal()" class="px-4 py-2 bg-gold-500 hover:bg-gold-400 text-navy-950 font-black rounded-xl text-xs transition shadow flex items-center">
+                        <i class="fa-solid fa-file-pdf mr-1.5 text-sm"></i> Export PDF Rapide
+                    </button>
+                    <button onclick="openFlashManagerModal()" class="px-4 py-2 bg-red-600 text-white font-bold rounded-xl text-xs hover:bg-red-700 transition shadow">
+                        <i class="fa-solid fa-bolt mr-1"></i> Gérer Ventes Flash
+                    </button>
+                    <button onclick="openAddPropertyModal()" class="px-4 py-2 bg-navy-900 text-gold-500 font-bold rounded-xl text-xs hover:bg-navy-800 transition shadow">
+                        <i class="fa-solid fa-plus mr-1"></i> Ajouter une Offre
+                    </button>
+                </div>
+            </div>
+
+            <!-- TABLEAU DES DEMANDES CLIENTS -->
+            <div class="bg-white rounded-2xl shadow-md p-6 border border-slate-200 mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-lg text-navy-950"><i class="fa-solid fa-inbox text-gold-500 mr-2"></i>Demandes & Proposals Clients Reçus</h3>
+                    <span id="requests-count-badge" class="bg-navy-900 text-gold-400 font-bold text-xs px-2.5 py-1 rounded-full">0 demande(s)</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700 uppercase">
+                                <th class="p-3">Date</th>
+                                <th class="p-3">Type</th>
+                                <th class="p-3">Nom / Vendeur</th>
+                                <th class="p-3">Contact</th>
+                                <th class="p-3">Détails / Recommandation</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-requests-table" class="divide-y divide-slate-100">
+                            <!-- Dynamic -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TABLEAU DES OFFRES -->
+            <div class="bg-white rounded-2xl shadow-md p-6 border border-slate-200">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-bold text-lg text-navy-950">Catalogue des Biens Publiés</h3>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700 uppercase">
+                                <th class="p-3">Titre</th>
+                                <th class="p-3">Type</th>
+                                <th class="p-3">Commune</th>
+                                <th class="p-3">Prix</th>
+                                <th class="p-3">Statut & Vente Flash</th>
+                                <th class="p-3">Document</th>
+                                <th class="p-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-offers-table" class="divide-y divide-slate-100">
+                            <!-- Dynamic -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL EXPORT PDF -->
+    <div id="modal-pdf-export" class="fixed inset-0 bg-navy-950/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h3 class="font-extrabold text-navy-950 text-base flex items-center">
+                    <i class="fa-solid fa-file-pdf text-red-600 mr-2"></i> Télécharger les informations en PDF
+                </h3>
+                <button onclick="closePdfExportModal()" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <p class="text-xs text-slate-500 mb-4">Sélectionnez les éléments à inclure dans votre rapport PDF officiel :</p>
+            
+            <div class="space-y-3 mb-6">
+                <label class="flex items-center space-x-3 p-3 bg-slate-50 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-100 transition">
+                    <input type="checkbox" id="pdf-opt-requests" checked class="w-4 h-4 text-navy-900 rounded">
+                    <div>
+                        <strong class="text-xs text-navy-950 block">Demandes & Propositions Clients</strong>
+                        <span class="text-[11px] text-slate-500">Je cherche un bien / Je propose un bien / Contacts</span>
+                    </div>
+                </label>
+
+                <label class="flex items-center space-x-3 p-3 bg-slate-50 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-100 transition">
+                    <input type="checkbox" id="pdf-opt-offers" checked class="w-4 h-4 text-navy-900 rounded">
+                    <div>
+                        <strong class="text-xs text-navy-950 block">Catalogue des Offres & Ventes Flash</strong>
+                        <span class="text-[11px] text-slate-500">Liste de tous les biens immobiliers et fonciers publiés</span>
+                    </div>
+                </label>
+            </div>
+
+            <div class="flex space-x-3">
+                <button onclick="closePdfExportModal()" class="w-1/2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2.5 rounded-xl text-xs transition">
+                    Annuler
+                </button>
+                <button onclick="generateAndDownloadPdf()" class="w-1/2 bg-gold-500 hover:bg-gold-400 text-navy-950 font-black py-2.5 rounded-xl text-xs transition shadow flex items-center justify-center space-x-1.5">
+                    <i class="fa-solid fa-download"></i>
+                    <span>Générer le PDF</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL AJOUT / ÉDITION DE BIEN -->
+    <div id="modal-add-property" class="fixed inset-0 bg-navy-950/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 max-h-[92vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h3 id="modal-prop-title-text" class="font-bold text-navy-950 text-base">Ajouter / Modifier une offre immobilière</h3>
+                <button onclick="closeAddPropertyModal()" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <form onsubmit="handleSavePropertySubmit(event)" class="space-y-3">
+                <input type="hidden" id="edit-prop-id">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Titre de l'offre *</label>
+                    <input id="new-prop-title" type="text" required placeholder="Ex: Terrain Viabilisé 500m² avec ACD" class="w-full border rounded p-2 text-xs transition">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Type de bien *</label>
+                        <select id="new-prop-type" class="w-full border rounded p-2 text-xs transition">
+                            <option value="Terrain Nu">Terrain Nu</option>
+                            <option value="Parcelle">Parcelle (Hectares)</option>
+                            <option value="Plantation">Plantation (Hévéa / Palmier)</option>
+                            <option value="Villa Basse">Villa Basse</option>
+                            <option value="Villa Duplex">Villa Duplex</option>
+                            <option value="Villa Triplex">Villa Triplex</option>
+                            <option value="Appartement Studio">Studio</option>
+                            <option value="Appartement 2 Pièces">Appartement 2 Pièces</option>
+                            <option value="Appartement 3 Pièces">Appartement 3 Pièces</option>
+                            <option value="Appartement 4 Pièces">Appartement 4 Pièces</option>
+                            <option value="Appartement 5 Pièces et plus">Appartement 5 Pièces et plus</option>
+                            <option value="Magasin">Magasin</option>
+                            <option value="Entrepôt">Entrepôt</option>
+                            <option value="Immeuble">Immeuble</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Transaction *</label>
+                        <select id="new-prop-transaction" class="w-full border rounded p-2 text-xs transition">
+                            <option value="Vente">Vente</option>
+                            <option value="Location">Location</option>
+                            <option value="Cession">Cession de Bail / Magasin</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Commune / Ville *</label>
+                        <input id="new-prop-city" type="text" required placeholder="Ex: Bingerville" class="w-full border rounded p-2 text-xs transition">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Prix (FCFA) *</label>
+                        <input id="new-prop-price" type="text" required placeholder="Ex: 15 000 000 FCFA" class="w-full border rounded p-2 text-xs transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Superficie (m² / Ha)</label>
+                        <input id="new-prop-surface" type="text" placeholder="Ex: 500 m² ou 2 Hectares" class="w-full border rounded p-2 text-xs transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Nombre de pièces</label>
+                        <input id="new-prop-rooms" type="text" placeholder="Ex: 5 Pièces" class="w-full border rounded p-2 text-xs transition">
+                    </div>
+                </div>
+
+                <div class="bg-red-50 p-3 rounded-lg border border-red-200 space-y-2">
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" id="new-prop-is-flash" class="w-4 h-4 text-red-600 rounded">
+                        <label for="new-prop-is-flash" class="text-xs font-bold text-red-800">Activer en Vente Flash individuelle</label>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700">Prix Flash Promotionnel</label>
+                            <input id="new-prop-flash-price" type="text" placeholder="Ex: 13 500 000 FCFA" class="w-full border rounded p-1.5 text-xs transition">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700">Date/Heure d'expiration *</label>
+                            <input id="new-prop-flash-expiry" type="datetime-local" class="w-full border rounded p-1.5 text-xs transition">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700">Lien Direct Vidéo (YouTube, TikTok...)</label>
+                            <input id="new-prop-flash-link" type="url" placeholder="https://..." class="w-full border rounded p-1.5 text-xs transition">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Document Foncier *</label>
+                        <select id="new-prop-doc" class="w-full border rounded p-2 text-xs transition">
+                            <option value="ACD">ACD</option>
+                            <option value="Attestation Villageoise">Attestation Villageoise</option>
+                            <option value="Titre Foncier">Titre Foncier</option>
+                            <option value="Approbation en cours">Approbation en cours</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Réf / N° Document</label>
+                        <input id="new-prop-doc-ref" type="text" placeholder="Ex: N° ACD 2024-889" class="w-full border rounded p-2 text-xs transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Statut initial *</label>
+                        <select id="new-prop-status" class="w-full border rounded p-2 text-xs transition">
+                            <option value="Disponible">Disponible</option>
+                            <option value="Sous option">Sous option</option>
+                            <option value="Réservé">Réservé</option>
+                            <option value="Vendu">Vendu</option>
+                            <option value="Loué">Loué</option>
+                            <option value="Caché">Caché (Masqué du site)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Latitude GPS</label>
+                        <input id="new-prop-lat" type="number" step="any" placeholder="Ex: 5.3550" class="w-full border rounded p-2 text-xs transition">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Longitude GPS</label>
+                        <input id="new-prop-lng" type="number" step="any" placeholder="Ex: -3.8860" class="w-full border rounded p-2 text-xs transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1"><i class="fa-solid fa-images text-navy-900 mr-1"></i> Importer des Photos *</label>
+                    <input id="new-prop-images-file" type="file" accept="image/*" multiple class="w-full border rounded p-2 text-xs bg-slate-50">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">URL Vidéo Drone / YouTube (Optionnel)</label>
+                    <input id="new-prop-video" type="url" placeholder="https://www.youtube.com/embed/..." class="w-full border rounded p-2 text-xs transition">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Description Détaillée *</label>
+                    <textarea id="new-prop-desc" rows="3" required placeholder="Présentez les détails du bien..." class="w-full border rounded p-2 text-xs transition"></textarea>
+                </div>
+
+                <div class="flex items-center space-x-2 pt-2">
+                    <input type="checkbox" id="new-prop-featured" class="w-4 h-4">
+                    <label for="new-prop-featured" class="text-xs font-bold text-slate-700">Mettre à la une sur l'accueil</label>
+                </div>
+
+                <button type="submit" class="w-full bg-navy-900 text-gold-500 font-extrabold py-3 rounded-lg text-xs hover:bg-navy-800 transition shadow mt-2">
+                    Enregistrer l'offre
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL GESTION VENTES FLASH -->
+    <div id="modal-flash-manager" class="fixed inset-0 bg-navy-950/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-xl w-full p-6">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h3 class="font-bold text-navy-950 text-base">Gestion des Ventes Flash</h3>
+                <button onclick="closeFlashManagerModal()" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div id="flash-selection-list" class="space-y-3 max-h-72 overflow-y-auto border p-2 rounded-lg">
+                    <!-- Dynamic -->
+                </div>
+                <button onclick="saveFlashOffers()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition">
+                    Mettre à jour les Ventes Flash
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL MODIFICATION IDENTIFIANTS ADMIN -->
+    <div id="modal-change-credentials" class="fixed inset-0 bg-navy-950/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6">
+            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <h3 class="font-bold text-navy-950 text-base">Modifier les identifiants Admin</h3>
+                <button onclick="closeChangeCredentialsModal()" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <form onsubmit="handleChangeCredentialsSubmit(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nouvel Identifiant (Login) *</label>
+                    <input id="new-admin-user" type="text" required class="w-full border rounded p-2 text-xs transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nouveau Mot de passe *</label>
+                    <input id="new-admin-pass" type="password" required class="w-full border rounded p-2 text-xs transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Confirmer le mot de passe *</label>
+                    <input id="new-admin-pass-confirm" type="password" required class="w-full border rounded p-2 text-xs transition">
+                </div>
+                <button type="submit" class="w-full bg-navy-900 text-gold-500 font-extrabold py-3 rounded-lg text-xs hover:bg-navy-800 transition shadow mt-4">
+                    Enregistrer les modifications
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURATION SUPABASE
+        const SUPABASE_URL = "https://aofwqglbflatkuvhaevm.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_Tt5HwNpxtY4p3vED3M90AA_2PVXsTaf";
+        const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+        let propertiesData = [];
+        let clientRequestsData = [];
+        let adminCredentials = JSON.parse(localStorage.getItem('prevux_admin_creds')) || { username: 'admin', password: '123' };
+
+        // Chargement des données distantes depuis Supabase
+        async function fetchAdminDataFromSupabase() {
+            if (!supabase) return;
+            try {
+                // Récupération des biens
+                const { data: propData, error: propError } = await supabase.from('properties').select('*');
+                if (!propError && propData) {
+                    propertiesData = propData.map(item => ({
+                        id: item.id,
+                        title: item.title,
+                        type: item.type,
+                        transaction: item.transaction,
+                        city: item.city,
+                        price: item.price,
+                        surface: item.surface,
+                        rooms: item.rooms,
+                        doc: item.doc,
+                        docRef: item.doc_ref,
+                        status: item.status,
+                        images: item.images || [],
+                        videoUrl: item.video_url || '',
+                        coords: item.coords ? [parseFloat(item.coords[0]), parseFloat(item.coords[1])] : [5.35, -3.95],
+                        featured: item.featured,
+                        isFlash: item.is_flash,
+                        flashPrice: item.flash_price,
+                        flashExpiry: item.flash_expiry ? item.flash_expiry.slice(0, 16) : '',
+                        flashMediaLink: item.flash_media_link,
+                        description: item.description
+                    }));
+                    renderAdminTable();
+                }
+
+                // Récupération des demandes (table requests)
+                const { data: reqData, error: reqError } = await supabase.from('requests').select('*').order('created_at', { ascending: false });
+                if (!reqError && reqData) {
+                    clientRequestsData = reqData.map(r => ({
+                        id: r.id,
+                        date: new Date(r.created_at).toLocaleDateString('fr-FR'),
+                        kind: r.kind,
+                        name: r.client_name,
+                        phone: r.client_phone,
+                        type: r.property_type,
+                        city: r.city,
+                        budget: r.budget,
+                        details: r.details
+                    }));
+                    renderAdminRequestsTable();
+                }
+            } catch (err) {
+                console.warn("Erreur de chargement Supabase admin :", err);
+            }
+        }
+
+        async function handleAdminLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('login-user').value;
+            const p = document.getElementById('login-pass').value;
+
+            if (u === adminCredentials.username && p === adminCredentials.password) {
+                document.getElementById('page-admin-login').classList.add('hidden');
+                document.getElementById('page-admin-dashboard').classList.remove('hidden');
+                await fetchAdminDataFromSupabase();
+            } else {
+                alert("Identifiant ou mot de passe incorrect.");
+            }
+        }
+
+        function adminLogout() {
+            document.getElementById('page-admin-dashboard').classList.add('hidden');
+            document.getElementById('page-admin-login').classList.remove('hidden');
+            document.getElementById('login-user').value = '';
+            document.getElementById('login-pass').value = '';
+        }
+
+        function renderAdminRequestsTable() {
+            const tbody = document.getElementById('admin-requests-table');
+            const badge = document.getElementById('requests-count-badge');
+            badge.textContent = `${clientRequestsData.length} demande(s)`;
+
+            if (clientRequestsData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Aucune demande enregistrée pour le moment.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = clientRequestsData.map(r => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="p-3 font-medium text-slate-500">${r.date}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${r.kind && r.kind.includes('Vendeur') ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}">${r.kind || 'Demande'}</span></td>
+                    <td class="p-3 font-bold text-navy-950">${r.name}</td>
+                    <td class="p-3 font-bold text-green-700"><a href="https://wa.me/${r.phone ? r.phone.replace(/[^0-9]/g,'') : ''}" target="_blank" class="hover:underline"><i class="fa-brands fa-whatsapp mr-1"></i>${r.phone}</a></td>
+                    <td class="p-3 text-slate-600"><strong>${r.type}</strong> ${r.city ? `(${r.city})` : ''} - ${r.details || r.budget}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderAdminTable() {
+            const tbody = document.getElementById('admin-offers-table');
+            tbody.innerHTML = propertiesData.map(p => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="p-3 font-bold text-navy-950 flex items-center space-x-2">
+                        <img src="${p.images[0]}" class="w-8 h-8 object-cover rounded shadow-sm">
+                        <span>${p.title}</span>
+                    </td>
+                    <td class="p-3">${p.type} (${p.transaction || 'Vente'})</td>
+                    <td class="p-3">${p.city}</td>
+                    <td class="p-3 font-bold text-green-700">${p.price}</td>
+                    <td class="p-3">
+                        <div class="flex flex-col space-y-1">
+                            <select onchange="changePropertyStatus('${p.id}', this.value)" class="text-xs border rounded p-1 font-bold ${p.status === 'Caché' ? 'bg-red-100 text-red-700' : 'bg-green-50 text-green-800'}">
+                                <option value="Disponible" ${p.status === 'Disponible' ? 'selected' : ''}>Disponible</option>
+                                <option value="Sous option" ${p.status === 'Sous option' ? 'selected' : ''}>Sous option</option>
+                                <option value="Réservé" ${p.status === 'Réservé' ? 'selected' : ''}>Réservé</option>
+                                <option value="Vendu" ${p.status === 'Vendu' ? 'selected' : ''}>Vendu</option>
+                                <option value="Loué" ${p.status === 'Loué' ? 'selected' : ''}>Loué</option>
+                                <option value="Caché" ${p.status === 'Caché' ? 'selected' : ''}>Caché</option>
+                            </select>
+                            <label class="flex items-center space-x-1 text-[11px] font-bold text-red-600 cursor-pointer mt-1">
+                                <input type="checkbox" ${p.isFlash ? 'checked' : ''} onchange="toggleFlashStatus('${p.id}', this.checked)" class="rounded">
+                                <span>⚡ Vente Flash</span>
+                            </label>
+                        </div>
+                    </td>
+                    <td class="p-3">${p.doc}</td>
+                    <td class="p-3 text-right space-x-2">
+                        <button onclick="openEditPropertyModal('${p.id}')" class="text-blue-600 hover:text-blue-800 font-bold transition">Éditer</button>
+                        <button onclick="deleteProperty('${p.id}')" class="text-red-500 hover:text-red-700 font-bold transition">Supprimer</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function changePropertyStatus(id, newStatus) {
+            const prop = propertiesData.find(p => p.id === id);
+            if (prop) {
+                prop.status = newStatus;
+                if (supabase) {
+                    await supabase.from('properties').update({ status: newStatus }).eq('id', id);
+                }
+                renderAdminTable();
+            }
+        }
+
+        async function toggleFlashStatus(id, isFlash) {
+            const prop = propertiesData.find(p => p.id === id);
+            if (prop) {
+                prop.isFlash = isFlash;
+                if (isFlash && !prop.flashPrice) prop.flashPrice = prop.price;
+                if (supabase) {
+                    await supabase.from('properties').update({ is_flash: isFlash, flash_price: prop.flashPrice }).eq('id', id);
+                }
+                renderAdminTable();
+            }
+        }
+
+        function openPdfExportModal() {
+            document.getElementById('modal-pdf-export').classList.remove('hidden');
+        }
+
+        function closePdfExportModal() {
+            document.getElementById('modal-pdf-export').classList.add('hidden');
+        }
+
+        function generateAndDownloadPdf() {
+            const includeRequests = document.getElementById('pdf-opt-requests').checked;
+            const includeOffers = document.getElementById('pdf-opt-offers').checked;
+
+            if (!includeRequests && !includeOffers) {
+                alert("Veuillez sélectionner au moins un élément à exporter.");
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFillColor(15, 44, 89);
+            doc.rect(0, 0, 210, 28, 'F');
+            
+            doc.setTextColor(255, 224, 102);
+            doc.setFontSize(16);
+            doc.setFont("helvetica", "bold");
+            doc.text("PREVUX AGENCY", 14, 12);
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(9);
+            doc.text("Rapport Officiel de Gestion - M. OKANGIN AHI", 14, 20);
+            
+            let currentY = 38;
+
+            if (includeRequests) {
+                doc.setTextColor(15, 44, 89);
+                doc.setFontSize(12);
+                doc.setFont("helvetica", "bold");
+                doc.text("1. Demandes & Propositions Clients Reçus", 14, currentY);
+                currentY += 4;
+
+                let reqRows = clientRequestsData.map(r => [
+                    r.date || '-',
+                    r.kind || 'Demande',
+                    r.name || '-',
+                    r.phone || '-',
+                    `${r.type || ''} ${r.city ? '('+r.city+')' : ''} - ${r.details || r.budget || ''}`
+                ]);
+
+                if (reqRows.length === 0) {
+                    reqRows.push(["Aucune", "demande", "enregistrée", "pour le", "moment"]);
+                }
+
+                doc.autoTable({
+                    startY: currentY,
+                    head: [['Date', 'Type', 'Nom / Vendeur', 'Contact', 'Détails']],
+                    body: reqRows,
+                    theme: 'grid',
+                    headStyles: { fillColor: [15, 44, 89], textColor: [255, 224, 102], fontStyle: 'bold', fontSize: 9 },
+                    bodyStyles: { fontSize: 8 },
+                    margin: { left: 14, right: 14 }
+                });
+
+                currentY = doc.lastAutoTable.finalY + 12;
+            }
+
+            if (includeOffers) {
+                if (currentY > 230) {
+                    doc.addPage();
+                    currentY = 20;
+                }
+
+                doc.setTextColor(15, 44, 89);
+                doc.setFontSize(12);
+                doc.setFont("helvetica", "bold");
+                doc.text("2. Catalogue des Biens Immobiliers & Ventes Flash", 14, currentY);
+                currentY += 4;
+
+                let offerRows = propertiesData.map(p => [
+                    p.title,
+                    `${p.type} (${p.transaction || 'Vente'})`,
+                    p.city,
+                    p.price,
+                    p.isFlash ? `FLASH (${p.flashPrice || p.price})` : p.status,
+                    p.doc
+                ]);
+
+                doc.autoTable({
+                    startY: currentY,
+                    head: [['Titre du Bien', 'Type', 'Commune', 'Prix', 'Statut / Flash', 'Doc']],
+                    body: offerRows,
+                    theme: 'grid',
+                    headStyles: { fillColor: [15, 44, 89], textColor: [255, 224, 102], fontStyle: 'bold', fontSize: 9 },
+                    bodyStyles: { fontSize: 8 },
+                    margin: { left: 14, right: 14 }
+                });
+            }
+
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(`PREVUX AGENCY - Imprimé le ${new Date().toLocaleDateString('fr-FR')} - Page ${i} / ${pageCount}`, 14, 290);
+            }
+
+            doc.save(`PREVUX_AGENCY_Rapport_${new Date().toISOString().slice(0, 10)}.pdf`);
+            closePdfExportModal();
+        }
+
+        function openAddPropertyModal() {
+            document.getElementById('edit-prop-id').value = '';
+            document.getElementById('modal-prop-title-text').textContent = "Ajouter une nouvelle offre immobilière";
+            document.getElementById('new-prop-title').value = '';
+            document.getElementById('new-prop-city').value = '';
+            document.getElementById('new-prop-price').value = '';
+            document.getElementById('new-prop-surface').value = '';
+            document.getElementById('new-prop-rooms').value = '';
+            document.getElementById('new-prop-doc-ref').value = '';
+            document.getElementById('new-prop-lat').value = '';
+            document.getElementById('new-prop-lng').value = '';
+            document.getElementById('new-prop-video').value = '';
+            document.getElementById('new-prop-desc').value = '';
+            document.getElementById('new-prop-is-flash').checked = false;
+            document.getElementById('new-prop-flash-price').value = '';
+            document.getElementById('new-prop-flash-expiry').value = '';
+            document.getElementById('new-prop-flash-link').value = '';
+            document.getElementById('new-prop-featured').checked = true;
+            document.getElementById('new-prop-images-file').value = '';
+            document.getElementById('modal-add-property').classList.remove('hidden');
+        }
+
+        function openEditPropertyModal(id) {
+            const prop = propertiesData.find(p => p.id === id);
+            if (!prop) return;
+
+            document.getElementById('edit-prop-id').value = prop.id;
+            document.getElementById('modal-prop-title-text').textContent = "Modifier l'offre : " + prop.title;
+            document.getElementById('new-prop-title').value = prop.title;
+            document.getElementById('new-prop-type').value = prop.type;
+            document.getElementById('new-prop-transaction').value = prop.transaction || 'Vente';
+            document.getElementById('new-prop-city').value = prop.city;
+            document.getElementById('new-prop-price').value = prop.price;
+            document.getElementById('new-prop-surface').value = prop.surface || '';
+            document.getElementById('new-prop-rooms').value = prop.rooms || '';
+            document.getElementById('new-prop-doc').value = prop.doc;
+            document.getElementById('new-prop-doc-ref').value = prop.docRef || '';
+            document.getElementById('new-prop-status').value = prop.status || 'Disponible';
+            document.getElementById('new-prop-lat').value = prop.coords ? prop.coords[0] : '';
+            document.getElementById('new-prop-lng').value = prop.coords ? prop.coords[1] : '';
+            document.getElementById('new-prop-video').value = prop.videoUrl || '';
+            document.getElementById('new-prop-desc').value = prop.description;
+            document.getElementById('new-prop-is-flash').checked = prop.isFlash || false;
+            document.getElementById('new-prop-flash-price').value = prop.flashPrice || '';
+            document.getElementById('new-prop-flash-expiry').value = prop.flashExpiry || '';
+            document.getElementById('new-prop-flash-link').value = prop.flashMediaLink || '';
+            document.getElementById('new-prop-featured').checked = prop.featured;
+            document.getElementById('modal-add-property').classList.remove('hidden');
+        }
+
+        function closeAddPropertyModal() {
+            document.getElementById('modal-add-property').classList.add('hidden');
+        }
+
+        async function handleSavePropertySubmit(e) {
+            e.preventDefault();
+            const editId = document.getElementById('edit-prop-id').value;
+            const fileInput = document.getElementById('new-prop-images-file');
+            const latVal = parseFloat(document.getElementById('new-prop-lat').value) || 5.3500;
+            const lngVal = parseFloat(document.getElementById('new-prop-lng').value) || -3.9500;
+
+            const processSave = async (imagesArray) => {
+                const payload = {
+                    title: document.getElementById('new-prop-title').value,
+                    type: document.getElementById('new-prop-type').value,
+                    transaction: document.getElementById('new-prop-transaction').value,
+                    city: document.getElementById('new-prop-city').value,
+                    price: document.getElementById('new-prop-price').value,
+                    surface: document.getElementById('new-prop-surface').value || '-',
+                    rooms: document.getElementById('new-prop-rooms').value || '-',
+                    doc: document.getElementById('new-prop-doc').value,
+                    doc_ref: document.getElementById('new-prop-doc-ref').value || '',
+                    status: document.getElementById('new-prop-status').value,
+                    is_flash: document.getElementById('new-prop-is-flash').checked,
+                    flash_price: document.getElementById('new-prop-flash-price').value || document.getElementById('new-prop-price').value,
+                    flash_expiry: document.getElementById('new-prop-flash-expiry').value || null,
+                    flash_media_link: document.getElementById('new-prop-flash-link').value || null,
+                    images: imagesArray.length > 0 ? imagesArray : ['https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80'],
+                    video_url: document.getElementById('new-prop-video').value || '',
+                    coords: [latVal, lngVal],
+                    featured: document.getElementById('new-prop-featured').checked,
+                    description: document.getElementById('new-prop-desc').value
+                };
+
+                if (supabase) {
+                    if (editId) {
+                        await supabase.from('properties').update(payload).eq('id', editId);
+                    } else {
+                        await supabase.from('properties').insert([payload]);
+                    }
+                }
+
+                closeAddPropertyModal();
+                await fetchAdminDataFromSupabase();
+                alert("Offre sauvegardée avec succès et synchronisée sur Supabase !");
+            };
+
+            if (fileInput.files && fileInput.files.length > 0) {
+                let readers = [];
+                let base64Images = [];
+                Array.from(fileInput.files).forEach(file => {
+                    readers.push(new Promise((resolve) => {
+                        let reader = new FileReader();
+                        reader.onload = function(e) {
+                            base64Images.push(e.target.result);
+                            resolve();
+                        };
+                        reader.readAsDataURL(file);
+                    }));
+                });
+                Promise.all(readers).then(() => processSave(base64Images));
+            } else {
+                let existingImages = [];
+                if (editId) {
+                    const existing = propertiesData.find(p => p.id === editId);
+                    if (existing) existingImages = existing.images;
+                }
+                processSave(existingImages);
+            }
+        }
+
+        async function deleteProperty(id) {
+            if (confirm("Voulez-vous vraiment supprimer cette offre ?")) {
+                if (supabase) {
+                    await supabase.from('properties').delete().eq('id', id);
+                }
+                propertiesData = propertiesData.filter(p => p.id !== id);
+                renderAdminTable();
+            }
+        }
+
+        function openFlashManagerModal() {
+            const list = document.getElementById('flash-selection-list');
+            list.innerHTML = propertiesData.map(p => `
+                <div class="p-3 border rounded-lg bg-slate-50 text-xs space-y-2">
+                    <div class="flex justify-between items-center">
+                        <div><strong>${p.title}</strong> (${p.city})</div>
+                        <label class="font-bold text-red-600 flex items-center space-x-1 cursor-pointer">
+                            <input type="checkbox" id="flash-check-${p.id}" ${p.isFlash ? 'checked' : ''} class="w-4 h-4">
+                            <span>⚡ Activer Flash</span>
+                        </label>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <input type="text" id="flash-price-${p.id}" placeholder="Prix Flash" value="${p.flashPrice || ''}" class="border p-1.5 rounded text-xs">
+                        <input type="datetime-local" id="flash-expiry-${p.id}" value="${p.flashExpiry || ''}" class="border p-1.5 rounded text-xs">
+                        <input type="url" id="flash-link-${p.id}" placeholder="Lien direct (TikTok/YT)" value="${p.flashMediaLink || ''}" class="border p-1.5 rounded text-xs">
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('modal-flash-manager').classList.remove('hidden');
+        }
+
+        function closeFlashManagerModal() {
+            document.getElementById('modal-flash-manager').classList.add('hidden');
+        }
+
+        async function saveFlashOffers() {
+            for (let p of propertiesData) {
+                const chk = document.getElementById(`flash-check-${p.id}`);
+                const priceInput = document.getElementById(`flash-price-${p.id}`);
+                const expiryInput = document.getElementById(`flash-expiry-${p.id}`);
+                const linkInput = document.getElementById(`flash-link-${p.id}`);
+
+                if (chk) {
+                    p.isFlash = chk.checked;
+                    if (priceInput) p.flashPrice = priceInput.value;
+                    if (expiryInput) p.flashExpiry = expiryInput.value;
+                    if (linkInput) p.flashMediaLink = linkInput.value;
+
+                    if (supabase) {
+                        await supabase.from('properties').update({
+                            is_flash: p.isFlash,
+                            flash_price: p.flashPrice,
+                            flash_expiry: p.flashExpiry || null,
+                            flash_media_link: p.flashMediaLink || null
+                        }).eq('id', p.id);
+                    }
+                }
+            }
+            closeFlashManagerModal();
+            renderAdminTable();
+            alert("Ventes Flash mises à jour et synchronisées !");
+        }
+
+        function openChangeCredentialsModal() {
+            document.getElementById('new-admin-user').value = adminCredentials.username;
+            document.getElementById('new-admin-pass').value = '';
+            document.getElementById('new-admin-pass-confirm').value = '';
+            document.getElementById('modal-change-credentials').classList.remove('hidden');
+        }
+
+        function closeChangeCredentialsModal() {
+            document.getElementById('modal-change-credentials').classList.add('hidden');
+        }
+
+        function handleChangeCredentialsSubmit(e) {
+            e.preventDefault();
+            const newUser = document.getElementById('new-admin-user').value;
+            const newPass = document.getElementById('new-admin-pass').value;
+            const confirmPass = document.getElementById('new-admin-pass-confirm').value;
+
+            if (newPass !== confirmPass) {
+                alert("Les mots de passe ne correspondent pas.");
+                return;
+            }
+
+            adminCredentials = { username: newUser, password: newPass };
+            localStorage.setItem('prevux_admin_creds', JSON.stringify(adminCredentials));
+            closeChangeCredentialsModal();
+            alert("Identifiants modifiés. Veuillez vous re-connecter.");
+            adminLogout();
+        }
+    </script>
+</body>
+</html>
