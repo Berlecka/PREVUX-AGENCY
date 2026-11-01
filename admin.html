@@ -384,89 +384,151 @@
         </div>
     </div>
 
+    <!-- SCRIPT APPLICATION & SUPABASE -->
     <script>
-        // CONFIGURATION SUPABASE
-        const SUPABASE_URL = "https://aofwqglbflatkuvhaevm.supabase.co";
-        const SUPABASE_ANON_KEY = "sb_publishable_Tt5HwNpxtY4p3vED3M90AA_2PVXsTaf";
-        const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+        // --- CONFIGURATION SUPABASE ---
+        const SUPABASE_URL = 'https://aofwqglbflatkuvhaevm.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_Tt5HwNpxtY4p3vED3M90AA_2PVXsTaf';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const nowMs = Date.now();
+        let defaultProperties = [
+            {
+                id: 'prop-1',
+                title: 'Parcelle Sécurisée 500m² avec ACD',
+                type: 'Terrain Nu',
+                transaction: 'Vente',
+                city: 'Bingerville',
+                price: '18 000 000 FCFA',
+                surface: '500 m²',
+                rooms: '-',
+                doc: 'ACD',
+                docRef: 'ACD N° 2023-4521',
+                status: 'Disponible',
+                images: ['https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80'],
+                videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+                coords: [5.3550, -3.8860],
+                featured: true,
+                isFlash: true,
+                flashPrice: '16 500 000 FCFA',
+                flashExpiry: new Date(nowMs + 48 * 3600 * 1000).toISOString().slice(0, 16),
+                flashMediaLink: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                description: 'Magnifique parcelle plate prête pour construction immédiate située dans un quartier résidentiel en pleine expansion à Bingerville.'
+            },
+            {
+                id: 'prop-2',
+                title: 'Villa Duplex HAUT STANDING 5 Pièces',
+                type: 'Villa Duplex',
+                transaction: 'Vente',
+                city: 'Cocody',
+                price: '145 000 000 FCFA',
+                surface: '450 m²',
+                rooms: '5 Pièces',
+                doc: 'Titre Foncier',
+                docRef: 'TF N° 10842',
+                status: 'Disponible',
+                images: ['https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=80'],
+                videoUrl: '',
+                coords: [5.3600, -3.9600],
+                featured: true,
+                isFlash: true,
+                flashPrice: '135 000 000 FCFA',
+                flashExpiry: new Date(nowMs + 18 * 3600 * 1000).toISOString().slice(0, 16),
+                flashMediaLink: 'https://www.tiktok.com',
+                description: 'Somptueuse villa duplex neuve avec piscine, garage 3 véhicules, suite parentale avec dressing.'
+            }
+        ];
 
         let propertiesData = [];
         let clientRequestsData = [];
         let adminCredentials = JSON.parse(localStorage.getItem('prevux_admin_creds')) || { username: 'admin', password: '123' };
 
-        // Chargement des données distantes depuis Supabase
-        async function fetchAdminDataFromSupabase() {
-            if (!supabase) return;
+        // --- CHARGEMENT ET SYNCHRONISATION SUPABASE ---
+        async function loadAdminDataFromSupabase() {
             try {
-                // Récupération des biens
-                const { data: propData, error: propError } = await supabase.from('properties').select('*');
-                if (!propError && propData) {
-                    propertiesData = propData.map(item => ({
-                        id: item.id,
-                        title: item.title,
-                        type: item.type,
-                        transaction: item.transaction,
-                        city: item.city,
-                        price: item.price,
-                        surface: item.surface,
-                        rooms: item.rooms,
-                        doc: item.doc,
-                        docRef: item.doc_ref,
-                        status: item.status,
-                        images: item.images || [],
-                        videoUrl: item.video_url || '',
-                        coords: item.coords ? [parseFloat(item.coords[0]), parseFloat(item.coords[1])] : [5.35, -3.95],
-                        featured: item.featured,
-                        isFlash: item.is_flash,
-                        flashPrice: item.flash_price,
-                        flashExpiry: item.flash_expiry ? item.flash_expiry.slice(0, 16) : '',
-                        flashMediaLink: item.flash_media_link,
-                        description: item.description
+                const { data: propData, error: propError } = await supabaseClient.from('properties').select('*');
+                if (!propError && propData && propData.length > 0) {
+                    propertiesData = propData.map(p => ({
+                        ...p,
+                        images: typeof p.images === 'string' ? JSON.parse(p.images) : (p.images || []),
+                        coords: typeof p.coords === 'string' ? JSON.parse(p.coords) : (p.coords || [5.35, -3.95])
                     }));
-                    renderAdminTable();
+                } else {
+                    propertiesData = defaultProperties;
                 }
 
-                // Récupération des demandes (table requests)
-                const { data: reqData, error: reqError } = await supabase.from('requests').select('*').order('created_at', { ascending: false });
+                const { data: reqData, error: reqError } = await supabaseClient.from('requests').select('*');
                 if (!reqError && reqData) {
-                    clientRequestsData = reqData.map(r => ({
-                        id: r.id,
-                        date: new Date(r.created_at).toLocaleDateString('fr-FR'),
-                        kind: r.kind,
-                        name: r.client_name,
-                        phone: r.client_phone,
-                        type: r.property_type,
-                        city: r.city,
-                        budget: r.budget,
-                        details: r.details
-                    }));
-                    renderAdminRequestsTable();
+                    clientRequestsData = reqData;
                 }
             } catch (err) {
-                console.warn("Erreur de chargement Supabase admin :", err);
+                console.warn("Erreur chargement Supabase:", err);
+                propertiesData = defaultProperties;
             }
         }
 
-        async function handleAdminLogin(e) {
+        async function savePropertiesToSupabase() {
+            try {
+                // Upsert global des propriétés
+                for (const prop of propertiesData) {
+                    await supabaseClient.from('properties').upsert([{
+                        id: prop.id,
+                        title: prop.title,
+                        type: prop.type,
+                        transaction: prop.transaction,
+                        city: prop.city,
+                        price: prop.price,
+                        surface: prop.surface,
+                        rooms: prop.rooms,
+                        doc: prop.doc,
+                        docRef: prop.docRef,
+                        status: prop.status,
+                        images: JSON.stringify(prop.images),
+                        videoUrl: prop.videoUrl,
+                        coords: JSON.stringify(prop.coords),
+                        featured: prop.featured,
+                        isFlash: prop.isFlash,
+                        flashPrice: prop.flashPrice,
+                        flashExpiry: prop.flashExpiry,
+                        flashMediaLink: prop.flashMediaLink,
+                        description: prop.description
+                    }]);
+                }
+            } catch (err) {
+                console.error("Erreur de sauvegarde Supabase:", err);
+            }
+        }
+
+        async function deletePropertyFromSupabase(id) {
+            try {
+                await supabaseClient.from('properties').delete().eq('id', id);
+            } catch (err) {
+                console.error("Erreur suppression Supabase:", err);
+            }
+        }
+
+        window.handleAdminLogin = async function(e) {
             e.preventDefault();
             const u = document.getElementById('login-user').value;
             const p = document.getElementById('login-pass').value;
 
             if (u === adminCredentials.username && p === adminCredentials.password) {
+                await loadAdminDataFromSupabase();
                 document.getElementById('page-admin-login').classList.add('hidden');
                 document.getElementById('page-admin-dashboard').classList.remove('hidden');
-                await fetchAdminDataFromSupabase();
+                renderAdminTable();
+                renderAdminRequestsTable();
             } else {
                 alert("Identifiant ou mot de passe incorrect.");
             }
-        }
+        };
 
-        function adminLogout() {
+        window.adminLogout = function() {
             document.getElementById('page-admin-dashboard').classList.add('hidden');
             document.getElementById('page-admin-login').classList.remove('hidden');
             document.getElementById('login-user').value = '';
             document.getElementById('login-pass').value = '';
-        }
+        };
 
         function renderAdminRequestsTable() {
             const tbody = document.getElementById('admin-requests-table');
@@ -525,38 +587,35 @@
             `).join('');
         }
 
-        async function changePropertyStatus(id, newStatus) {
+        window.changePropertyStatus = function(id, newStatus) {
             const prop = propertiesData.find(p => p.id === id);
             if (prop) {
                 prop.status = newStatus;
-                if (supabase) {
-                    await supabase.from('properties').update({ status: newStatus }).eq('id', id);
-                }
+                savePropertiesToSupabase();
                 renderAdminTable();
             }
-        }
+        };
 
-        async function toggleFlashStatus(id, isFlash) {
+        window.toggleFlashStatus = function(id, isFlash) {
             const prop = propertiesData.find(p => p.id === id);
             if (prop) {
                 prop.isFlash = isFlash;
                 if (isFlash && !prop.flashPrice) prop.flashPrice = prop.price;
-                if (supabase) {
-                    await supabase.from('properties').update({ is_flash: isFlash, flash_price: prop.flashPrice }).eq('id', id);
-                }
+                savePropertiesToSupabase();
                 renderAdminTable();
             }
-        }
+        };
 
-        function openPdfExportModal() {
+        // --- GESTION DE LA MODALE ET DU TÉLÉCHARGEMENT PDF ---
+        window.openPdfExportModal = function() {
             document.getElementById('modal-pdf-export').classList.remove('hidden');
-        }
+        };
 
-        function closePdfExportModal() {
+        window.closePdfExportModal = function() {
             document.getElementById('modal-pdf-export').classList.add('hidden');
-        }
+        };
 
-        function generateAndDownloadPdf() {
+        window.generateAndDownloadPdf = function() {
             const includeRequests = document.getElementById('pdf-opt-requests').checked;
             const includeOffers = document.getElementById('pdf-opt-offers').checked;
 
@@ -568,10 +627,11 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
-            doc.setFillColor(15, 44, 89);
+            // En-tête du document
+            doc.setFillColor(15, 44, 89); // Couleur Navy 900
             doc.rect(0, 0, 210, 28, 'F');
             
-            doc.setTextColor(255, 224, 102);
+            doc.setTextColor(255, 224, 102); // Or
             doc.setFontSize(16);
             doc.setFont("helvetica", "bold");
             doc.text("PREVUX AGENCY", 14, 12);
@@ -582,6 +642,7 @@
             
             let currentY = 38;
 
+            // Section 1 : Demandes & Propositions Clients
             if (includeRequests) {
                 doc.setTextColor(15, 44, 89);
                 doc.setFontSize(12);
@@ -614,6 +675,7 @@
                 currentY = doc.lastAutoTable.finalY + 12;
             }
 
+            // Section 2 : Catalogue des Offres
             if (includeOffers) {
                 if (currentY > 230) {
                     doc.addPage();
@@ -646,6 +708,7 @@
                 });
             }
 
+            // Pied de page sur toutes les pages
             const pageCount = doc.internal.getNumberOfPages();
             for (let i = 1; i <= pageCount; i++) {
                 doc.setPage(i);
@@ -656,9 +719,9 @@
 
             doc.save(`PREVUX_AGENCY_Rapport_${new Date().toISOString().slice(0, 10)}.pdf`);
             closePdfExportModal();
-        }
+        };
 
-        function openAddPropertyModal() {
+        window.openAddPropertyModal = function() {
             document.getElementById('edit-prop-id').value = '';
             document.getElementById('modal-prop-title-text').textContent = "Ajouter une nouvelle offre immobilière";
             document.getElementById('new-prop-title').value = '';
@@ -678,9 +741,9 @@
             document.getElementById('new-prop-featured').checked = true;
             document.getElementById('new-prop-images-file').value = '';
             document.getElementById('modal-add-property').classList.remove('hidden');
-        }
+        };
 
-        function openEditPropertyModal(id) {
+        window.openEditPropertyModal = function(id) {
             const prop = propertiesData.find(p => p.id === id);
             if (!prop) return;
 
@@ -706,53 +769,73 @@
             document.getElementById('new-prop-flash-link').value = prop.flashMediaLink || '';
             document.getElementById('new-prop-featured').checked = prop.featured;
             document.getElementById('modal-add-property').classList.remove('hidden');
-        }
+        };
 
-        function closeAddPropertyModal() {
+        window.closeAddPropertyModal = function() {
             document.getElementById('modal-add-property').classList.add('hidden');
-        }
+        };
 
-        async function handleSavePropertySubmit(e) {
+        window.handleSavePropertySubmit = function(e) {
             e.preventDefault();
             const editId = document.getElementById('edit-prop-id').value;
             const fileInput = document.getElementById('new-prop-images-file');
             const latVal = parseFloat(document.getElementById('new-prop-lat').value) || 5.3500;
             const lngVal = parseFloat(document.getElementById('new-prop-lng').value) || -3.9500;
 
-            const processSave = async (imagesArray) => {
-                const payload = {
-                    title: document.getElementById('new-prop-title').value,
-                    type: document.getElementById('new-prop-type').value,
-                    transaction: document.getElementById('new-prop-transaction').value,
-                    city: document.getElementById('new-prop-city').value,
-                    price: document.getElementById('new-prop-price').value,
-                    surface: document.getElementById('new-prop-surface').value || '-',
-                    rooms: document.getElementById('new-prop-rooms').value || '-',
-                    doc: document.getElementById('new-prop-doc').value,
-                    doc_ref: document.getElementById('new-prop-doc-ref').value || '',
-                    status: document.getElementById('new-prop-status').value,
-                    is_flash: document.getElementById('new-prop-is-flash').checked,
-                    flash_price: document.getElementById('new-prop-flash-price').value || document.getElementById('new-prop-price').value,
-                    flash_expiry: document.getElementById('new-prop-flash-expiry').value || null,
-                    flash_media_link: document.getElementById('new-prop-flash-link').value || null,
-                    images: imagesArray.length > 0 ? imagesArray : ['https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80'],
-                    video_url: document.getElementById('new-prop-video').value || '',
-                    coords: [latVal, lngVal],
-                    featured: document.getElementById('new-prop-featured').checked,
-                    description: document.getElementById('new-prop-desc').value
-                };
-
-                if (supabase) {
-                    if (editId) {
-                        await supabase.from('properties').update(payload).eq('id', editId);
-                    } else {
-                        await supabase.from('properties').insert([payload]);
+            const processSave = (imagesArray) => {
+                if (editId) {
+                    const prop = propertiesData.find(p => p.id === editId);
+                    if (prop) {
+                        prop.title = document.getElementById('new-prop-title').value;
+                        prop.type = document.getElementById('new-prop-type').value;
+                        prop.transaction = document.getElementById('new-prop-transaction').value;
+                        prop.city = document.getElementById('new-prop-city').value;
+                        prop.price = document.getElementById('new-prop-price').value;
+                        prop.surface = document.getElementById('new-prop-surface').value || '-';
+                        prop.rooms = document.getElementById('new-prop-rooms').value || '-';
+                        prop.doc = document.getElementById('new-prop-doc').value;
+                        prop.docRef = document.getElementById('new-prop-doc-ref').value || '';
+                        prop.status = document.getElementById('new-prop-status').value;
+                        prop.isFlash = document.getElementById('new-prop-is-flash').checked;
+                        prop.flashPrice = document.getElementById('new-prop-flash-price').value || prop.price;
+                        prop.flashExpiry = document.getElementById('new-prop-flash-expiry').value;
+                        prop.flashMediaLink = document.getElementById('new-prop-flash-link').value;
+                        if (imagesArray.length > 0) prop.images = imagesArray;
+                        prop.videoUrl = document.getElementById('new-prop-video').value || '';
+                        prop.coords = [latVal, lngVal];
+                        prop.featured = document.getElementById('new-prop-featured').checked;
+                        prop.description = document.getElementById('new-prop-desc').value;
                     }
+                } else {
+                    const newProp = {
+                        id: 'prop-' + Date.now(),
+                        title: document.getElementById('new-prop-title').value,
+                        type: document.getElementById('new-prop-type').value,
+                        transaction: document.getElementById('new-prop-transaction').value,
+                        city: document.getElementById('new-prop-city').value,
+                        price: document.getElementById('new-prop-price').value,
+                        surface: document.getElementById('new-prop-surface').value || '-',
+                        rooms: document.getElementById('new-prop-rooms').value || '-',
+                        doc: document.getElementById('new-prop-doc').value,
+                        docRef: document.getElementById('new-prop-doc-ref').value || '',
+                        status: document.getElementById('new-prop-status').value,
+                        isFlash: document.getElementById('new-prop-is-flash').checked,
+                        flashPrice: document.getElementById('new-prop-flash-price').value || document.getElementById('new-prop-price').value,
+                        flashExpiry: document.getElementById('new-prop-flash-expiry').value,
+                        flashMediaLink: document.getElementById('new-prop-flash-link').value,
+                        images: imagesArray.length > 0 ? imagesArray : ['https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80'],
+                        videoUrl: document.getElementById('new-prop-video').value || '',
+                        coords: [latVal, lngVal],
+                        featured: document.getElementById('new-prop-featured').checked,
+                        description: document.getElementById('new-prop-desc').value
+                    };
+                    propertiesData.unshift(newProp);
                 }
 
+                savePropertiesToSupabase();
                 closeAddPropertyModal();
-                await fetchAdminDataFromSupabase();
-                alert("Offre sauvegardée avec succès et synchronisée sur Supabase !");
+                renderAdminTable();
+                alert("Offre sauvegardée avec succès sur Supabase !");
             };
 
             if (fileInput.files && fileInput.files.length > 0) {
@@ -777,19 +860,17 @@
                 }
                 processSave(existingImages);
             }
-        }
+        };
 
-        async function deleteProperty(id) {
+        window.deleteProperty = function(id) {
             if (confirm("Voulez-vous vraiment supprimer cette offre ?")) {
-                if (supabase) {
-                    await supabase.from('properties').delete().eq('id', id);
-                }
                 propertiesData = propertiesData.filter(p => p.id !== id);
+                deletePropertyFromSupabase(id);
                 renderAdminTable();
             }
-        }
+        };
 
-        function openFlashManagerModal() {
+        window.openFlashManagerModal = function() {
             const list = document.getElementById('flash-selection-list');
             list.innerHTML = propertiesData.map(p => `
                 <div class="p-3 border rounded-lg bg-slate-50 text-xs space-y-2">
@@ -808,14 +889,14 @@
                 </div>
             `).join('');
             document.getElementById('modal-flash-manager').classList.remove('hidden');
-        }
+        };
 
-        function closeFlashManagerModal() {
+        window.closeFlashManagerModal = function() {
             document.getElementById('modal-flash-manager').classList.add('hidden');
-        }
+        };
 
-        async function saveFlashOffers() {
-            for (let p of propertiesData) {
+        window.saveFlashOffers = function() {
+            propertiesData.forEach(p => {
                 const chk = document.getElementById(`flash-check-${p.id}`);
                 const priceInput = document.getElementById(`flash-price-${p.id}`);
                 const expiryInput = document.getElementById(`flash-expiry-${p.id}`);
@@ -826,34 +907,26 @@
                     if (priceInput) p.flashPrice = priceInput.value;
                     if (expiryInput) p.flashExpiry = expiryInput.value;
                     if (linkInput) p.flashMediaLink = linkInput.value;
-
-                    if (supabase) {
-                        await supabase.from('properties').update({
-                            is_flash: p.isFlash,
-                            flash_price: p.flashPrice,
-                            flash_expiry: p.flashExpiry || null,
-                            flash_media_link: p.flashMediaLink || null
-                        }).eq('id', p.id);
-                    }
                 }
-            }
+            });
+            savePropertiesToSupabase();
             closeFlashManagerModal();
             renderAdminTable();
-            alert("Ventes Flash mises à jour et synchronisées !");
-        }
+            alert("Ventes Flash mises à jour avec succès sur Supabase !");
+        };
 
-        function openChangeCredentialsModal() {
+        window.openChangeCredentialsModal = function() {
             document.getElementById('new-admin-user').value = adminCredentials.username;
             document.getElementById('new-admin-pass').value = '';
             document.getElementById('new-admin-pass-confirm').value = '';
             document.getElementById('modal-change-credentials').classList.remove('hidden');
-        }
+        };
 
-        function closeChangeCredentialsModal() {
+        window.closeChangeCredentialsModal = function() {
             document.getElementById('modal-change-credentials').classList.add('hidden');
-        }
+        };
 
-        function handleChangeCredentialsSubmit(e) {
+        window.handleChangeCredentialsSubmit = function(e) {
             e.preventDefault();
             const newUser = document.getElementById('new-admin-user').value;
             const newPass = document.getElementById('new-admin-pass').value;
@@ -869,7 +942,7 @@
             closeChangeCredentialsModal();
             alert("Identifiants modifiés. Veuillez vous re-connecter.");
             adminLogout();
-        }
+        };
     </script>
 </body>
 </html>

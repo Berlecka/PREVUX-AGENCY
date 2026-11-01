@@ -683,7 +683,7 @@
                                     <i class="fa-solid fa-store"></i>
                                 </div>
                                 <h4 class="font-extrabold text-navy-950 text-sm mb-1.5 group-hover:text-gold-600 transition">11. Commerce Général</h4>
-                                <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed">Import-export, distribution et représentation de biens et services de toute nature.</p>
+                                <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed">Import-export, distribution et representation de biens et services de toute nature.</p>
                             </div>
                             <span class="text-[11px] font-bold text-navy-900 mt-3 inline-flex items-center group-hover:translate-x-1 transition">
                                 <span>Voir les détails</span> <i class="fa-solid fa-chevron-right text-[9px] ml-1"></i>
@@ -870,12 +870,12 @@
         </div>
     </footer>
 
-    <!-- SCRIPT APPLICATION -->
+    <!-- SCRIPT APPLICATION & SUPABASE -->
     <script>
-        // CONFIGURATION SUPABASE DIRECTE (Injectée proprement)
-        const SUPABASE_URL = "https://aofwqglbflatkuvhaevm.supabase.co";
-        const SUPABASE_ANON_KEY = "sb_publishable_Tt5HwNpxtY4p3vED3M90AA_2PVXsTaf";
-        const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+        // --- CONFIGURATION SUPABASE ---
+        const SUPABASE_URL = 'https://aofwqglbflatkuvhaevm.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_Tt5HwNpxtY4p3vED3M90AA_2PVXsTaf';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         const nowMs = Date.now();
         let defaultProperties = [
@@ -944,65 +944,41 @@
             }
         ];
 
-        let propertiesData = JSON.parse(localStorage.getItem('prevux_properties')) || defaultProperties;
-        let clientRequestsData = JSON.parse(localStorage.getItem('prevux_requests')) || [];
+        let propertiesData = [];
+        let clientRequestsData = [];
 
-        // Récupération asynchrone des biens depuis Supabase
-        async function fetchPropertiesFromSupabase() {
-            if (!supabase) return;
+        // --- CHARGEMENT DEPUIS SUPABASE ---
+        async function loadDataFromSupabase() {
             try {
-                const { data, error } = await supabase.from('properties').select('*');
-                if (!error && data && data.length > 0) {
-                    propertiesData = data.map(item => ({
-                        id: item.id,
-                        title: item.title,
-                        type: item.type,
-                        transaction: item.transaction,
-                        city: item.city,
-                        price: item.price,
-                        surface: item.surface,
-                        rooms: item.rooms,
-                        doc: item.doc,
-                        docRef: item.doc_ref || item.docRef,
-                        status: item.status,
-                        images: Array.isArray(item.images) ? item.images : JSON.parse(item.images || '[]'),
-                        videoUrl: item.video_url || item.videoUrl || '',
-                        coords: Array.isArray(item.coords) ? item.coords : JSON.parse(item.coords || '[5.35, -4.00]'),
-                        featured: item.featured,
-                        isFlash: item.is_flash || item.isFlash,
-                        flashPrice: item.flash_price || item.flashPrice,
-                        flashExpiry: item.flash_expiry || item.flashExpiry,
-                        flashMediaLink: item.flash_media_link || item.flashMediaLink,
-                        description: item.description
+                const { data: propData, error: propError } = await supabaseClient.from('properties').select('*');
+                if (!propError && propData && propData.length > 0) {
+                    propertiesData = propData.map(p => ({
+                        ...p,
+                        images: typeof p.images === 'string' ? JSON.parse(p.images) : (p.images || []),
+                        coords: typeof p.coords === 'string' ? JSON.parse(p.coords) : (p.coords || [5.35, -3.95])
                     }));
-                    localStorage.setItem('prevux_properties', JSON.stringify(propertiesData));
-                    renderFlashOffers();
-                    renderFeaturedProperties();
+                } else {
+                    propertiesData = defaultProperties;
+                }
+
+                const { data: reqData, error: reqError } = await supabaseClient.from('requests').select('*');
+                if (!reqError && reqData) {
+                    clientRequestsData = reqData;
                 }
             } catch (err) {
-                console.warn("Mode local de secours actif :", err);
+                console.warn("Mode hors-ligne / Erreur Supabase, utilisation des valeurs par défaut:", err);
+                propertiesData = defaultProperties;
             }
+            navigateTo('home');
         }
 
-        async function saveRequestToSupabase(reqObj) {
-            if (!supabase) return;
+        async function saveRequestToSupabase(newReq) {
+            clientRequestsData.unshift(newReq);
             try {
-                await supabase.from('client_requests').insert([{
-                    kind: reqObj.kind,
-                    name: reqObj.name,
-                    phone: reqObj.phone,
-                    type: reqObj.type,
-                    budget: reqObj.budget || '',
-                    city: reqObj.city || '',
-                    details: reqObj.details || ''
-                }]);
+                await supabaseClient.from('requests').insert([newReq]);
             } catch (err) {
-                console.warn("Erreur d'enregistrement Supabase :", err);
+                console.error("Erreur d'enregistrement de la demande sur Supabase:", err);
             }
-        }
-
-        function saveRequestsToStorage() {
-            localStorage.setItem('prevux_requests', JSON.stringify(clientRequestsData));
         }
 
         // DONNEES EXPLICATIVES DÉTAILLÉES DES 12 DOMAINES D'EXPERTISE
@@ -1069,7 +1045,7 @@
             }
         ];
 
-        function openDomainModal(index) {
+        window.openDomainModal = function(index) {
             const domain = officialDomainsData[index];
             if (!domain) return;
 
@@ -1081,11 +1057,11 @@
             waBtn.href = `https://wa.me/2250505487055?text=Bonjour%20M.%20OKANGIN%20AHI,%20je%20souhaite%20des%20informations%20sur%20votre%20expertise:%20${encodeURIComponent(domain.title)}`;
 
             document.getElementById('domain-modal').classList.remove('hidden');
-        }
+        };
 
-        function closeDomainModal() {
+        window.closeDomainModal = function() {
             document.getElementById('domain-modal').classList.add('hidden');
-        }
+        };
 
         let translations = {
             fr: {
@@ -1154,7 +1130,7 @@
         let currentLightboxProp = null;
         let currentLightboxIndex = 0;
 
-        function navigateTo(pageId, extraParam = null) {
+        window.navigateTo = function(pageId, extraParam = null) {
             const pages = document.querySelectorAll('.spa-page');
             pages.forEach(p => p.classList.remove('active'));
 
@@ -1177,11 +1153,11 @@
             } else if (pageId === 'detail' && extraParam) {
                 renderPropertyDetail(extraParam);
             }
-        }
+        };
 
-        function toggleMobileMenu() {
+        window.toggleMobileMenu = function() {
             document.getElementById('mobile-menu').classList.toggle('hidden');
-        }
+        };
 
         function getFlashTimerBadgeHtml(expiryDateStr) {
             if (!expiryDateStr) return '<span class="text-[10px] font-bold text-gold-400 bg-navy-950/90 px-2 py-0.5 rounded">Offre Flash</span>';
@@ -1449,7 +1425,7 @@
             }, 300);
         }
 
-        function openLightbox(propId, index) {
+        window.openLightbox = function(propId, index) {
             const prop = propertiesData.find(p => p.id === propId);
             if (!prop) return;
 
@@ -1458,7 +1434,7 @@
 
             updateLightboxContent();
             document.getElementById('lightbox-modal').classList.remove('hidden');
-        }
+        };
 
         function updateLightboxContent() {
             if (!currentLightboxProp) return;
@@ -1477,23 +1453,23 @@
             waBtn.href = `https://wa.me/2250505487055?text=Bonjour%20M.%20OKANGIN%20AHI,%20concernant%20l'offre%20${encodeURIComponent(currentLightboxProp.title)}`;
         }
 
-        function prevLightboxImage() {
+        window.prevLightboxImage = function() {
             if (!currentLightboxProp) return;
             currentLightboxIndex = (currentLightboxIndex - 1 + currentLightboxProp.images.length) % currentLightboxProp.images.length;
             updateLightboxContent();
-        }
+        };
 
-        function nextLightboxImage() {
+        window.nextLightboxImage = function() {
             if (!currentLightboxProp) return;
             currentLightboxIndex = (currentLightboxIndex + 1) % currentLightboxProp.images.length;
             updateLightboxContent();
-        }
+        };
 
-        function closeLightbox() {
+        window.closeLightbox = function() {
             document.getElementById('lightbox-modal').classList.add('hidden');
-        }
+        };
 
-        function applyFilters() {
+        window.applyFilters = function() {
             const type = document.getElementById('filter-type').value;
             const city = document.getElementById('filter-city').value;
             const doc = document.getElementById('filter-doc').value;
@@ -1504,16 +1480,16 @@
                        (doc === 'ALL' || p.doc === doc);
             });
             renderAllOffers(filtered);
-        }
+        };
 
-        function resetFilters() {
+        window.resetFilters = function() {
             document.getElementById('filter-type').value = 'ALL';
             document.getElementById('filter-city').value = 'ALL';
             document.getElementById('filter-doc').value = 'ALL';
             renderAllOffers(propertiesData);
-        }
+        };
 
-        function startVoiceDictation(targetInputId, btnElem) {
+        window.startVoiceDictation = function(targetInputId, btnElem) {
             if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
                 alert("La dictée vocale n'est pas supportée sur ce navigateur.");
                 return;
@@ -1554,9 +1530,9 @@
                 if (btnText) btnText.textContent = "Dictée Vocale";
                 activeDictationRecognition = null;
             };
-        }
+        };
 
-        function switchSubmitTab(tab) {
+        window.switchSubmitTab = function(tab) {
             const searchBtn = document.getElementById('tab-btn-search');
             const sellBtn = document.getElementById('tab-btn-sell');
             const searchForm = document.getElementById('form-search-property');
@@ -1576,9 +1552,9 @@
                 sellForm.classList.remove('hidden');
                 searchForm.classList.add('hidden');
             }
-        }
+        };
 
-        async function handleSearchRequestSubmit(e) {
+        window.handleSearchRequestSubmit = function(e) {
             e.preventDefault();
             const clientName = document.getElementById('search-client-name').value;
             const clientPhone = document.getElementById('search-client-phone').value;
@@ -1596,9 +1572,7 @@
                 budget: searchBudget,
                 details: criteriaText
             };
-            clientRequestsData.unshift(newReq);
-            saveRequestsToStorage();
-            await saveRequestToSupabase(newReq);
+            saveRequestToSupabase(newReq);
 
             const matches = propertiesData.filter(p => {
                 if (p.status === 'Caché') return false;
@@ -1647,9 +1621,9 @@
             }
 
             e.target.reset();
-        }
+        };
 
-        async function handleSellRequestSubmit(e) {
+        window.handleSellRequestSubmit = function(e) {
             e.preventDefault();
             const propType = document.getElementById('sell-prop-type').value;
             const propCity = document.getElementById('sell-prop-city').value.toLowerCase();
@@ -1667,9 +1641,7 @@
                 city: document.getElementById('sell-prop-city').value,
                 details: document.getElementById('sell-desc-input').value
             };
-            clientRequestsData.unshift(newProposal);
-            saveRequestsToStorage();
-            await saveRequestToSupabase(newProposal);
+            saveRequestToSupabase(newProposal);
 
             const matches = propertiesData.filter(p => 
                 p.status !== 'Caché' && (p.type === propType || p.city.toLowerCase().includes(propCity) || desc.includes(p.city.toLowerCase()))
@@ -1713,9 +1685,9 @@
                     <p class="text-xs text-slate-600 mb-2">Notre cabinet étudie votre dossier avec attention. Un agent va vous recontacter très rapidement par WhatsApp pour finaliser l'expertise de votre bien.</p>
                 `;
             }
-        }
+        };
 
-        function switchLanguage(lang) {
+        window.switchLanguage = function(lang) {
             currentLang = lang;
             document.getElementById('lang-fr').className = lang === 'fr' ? 'px-2.5 py-1 text-xs font-bold rounded bg-navy-900 text-gold-400 transition' : 'px-2.5 py-1 text-xs font-bold rounded text-slate-600 hover:text-navy-900 transition';
             document.getElementById('lang-en').className = lang === 'en' ? 'px-2.5 py-1 text-xs font-bold rounded bg-navy-900 text-gold-400 transition' : 'px-2.5 py-1 text-xs font-bold rounded text-slate-600 hover:text-navy-900 transition';
@@ -1726,15 +1698,15 @@
                     elem.textContent = translations[lang][key];
                 }
             });
-        }
+        };
 
-        function handleQuoteSubmit(e) {
+        window.handleQuoteSubmit = function(e) {
             e.preventDefault();
             alert("Devis technique transmis à M. OKANGIN AHI.");
             e.target.reset();
-        }
+        };
 
-        async function handleDirectContactSubmit(e) {
+        window.handleDirectContactSubmit = function(e) {
             e.preventDefault();
             const contactReq = {
                 id: 'req-' + Date.now(),
@@ -1743,15 +1715,13 @@
                 name: document.getElementById('direct-contact-name').value,
                 phone: document.getElementById('direct-contact-phone').value,
                 type: 'Direct',
-                    details: document.getElementById('direct-contact-msg').value
+                details: document.getElementById('direct-contact-msg').value
             };
-            clientRequestsData.unshift(contactReq);
-            saveRequestsToStorage();
-            await saveRequestToSupabase(contactReq);
+            saveRequestToSupabase(contactReq);
 
             alert("Message envoyé !");
             e.target.reset();
-        }
+        };
 
         function startGlobalTimerInterval() {
             setInterval(() => {
@@ -1762,10 +1732,9 @@
             }, 1000);
         }
 
-        window.onload = async function() {
-            navigateTo('home');
+        window.onload = function() {
+            loadDataFromSupabase();
             startGlobalTimerInterval();
-            await fetchPropertiesFromSupabase();
         };
     </script>
 </body>
