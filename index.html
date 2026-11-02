@@ -880,20 +880,36 @@
         let propertiesData = [];
         let clientRequestsData = [];
 
+        // ⚠️ NOUVEAU : gestion de la page courante (survit au refresh dans le même onglet)
+        const LAST_PAGE_KEY = 'prevux_last_page';
+        function saveLastPage(pageId, extraParam) {
+            try {
+                sessionStorage.setItem(LAST_PAGE_KEY, JSON.stringify({ pageId, extraParam: extraParam || null }));
+            } catch (e) { /* sessionStorage indisponible, on ignore */ }
+        }
+        function getLastPage() {
+            try {
+                const raw = sessionStorage.getItem(LAST_PAGE_KEY);
+                return raw ? JSON.parse(raw) : null;
+            } catch (e) { return null; }
+        }
+
         // --- CHARGEMENT DYNAMIQUE EN DIRECT DEPUIS SUPABASE ---
         async function loadDataFromSupabase() {
             try {
                 const { data: propData, error: propError } = await supabaseClient
                     .from('properties')
                     .select('*')
-                    .neq('status', 'Caché'); // Exclut les biens masqués ou archivés dans l'admin
+                    .neq('status', 'Caché');
 
-                if (!propError && propData) {
+                if (propError) throw propError;
+
+                if (propData) {
                     propertiesData = propData.map(p => ({
                         ...p,
                         images: typeof p.images === 'string' ? JSON.parse(p.images) : (p.images || []),
                         coords: typeof p.coords === 'string' ? JSON.parse(p.coords) : (p.coords || [5.35, -3.95]),
-                        isFlash: p.is_flash !== undefined ? p.is_flash : p.isFlash
+                        isFlash: p.isFlash === true || p.isFlash === 'true'
                     }));
                 }
 
@@ -903,9 +919,9 @@
                 }
             } catch (err) {
                 console.error("Erreur de récupération des données Supabase sur l'index :", err);
+                propertiesData = [];
             }
 
-            // Rafraîchir l'affichage sur la page d'accueil après chargement
             renderFlashOffers();
             renderFeaturedProperties();
         }
@@ -1068,6 +1084,7 @@
         let currentLightboxProp = null;
         let currentLightboxIndex = 0;
 
+        // ⚠️ MODIFIÉ : sauvegarde la page courante à chaque navigation
         window.navigateTo = function(pageId, extraParam = null) {
             const pages = document.querySelectorAll('.spa-page');
             pages.forEach(p => p.classList.remove('active'));
@@ -1091,6 +1108,9 @@
             } else if (pageId === 'detail' && extraParam) {
                 renderPropertyDetail(extraParam);
             }
+
+            // Persistance de la page courante pour restauration au refresh
+            saveLastPage(pageId, extraParam);
         };
 
         window.toggleMobileMenu = function() {
@@ -1670,10 +1690,42 @@
             }, 1000);
         }
 
-        // Lancement au chargement de la page
-        window.onload = function() {
-            loadDataFromSupabase();
-            navigateTo('home');
+        // Temps réel Supabase (synchronisation admin → index)
+        function subscribeToRealtime() {
+            supabaseClient
+                .channel('prevux-properties-realtime')
+                .on('postgres_changes',
+                    { event: '*', schema: 'public', table: 'properties' },
+                    () => { loadDataFromSupabase(); }
+                )
+                .subscribe();
+        }
+
+        // ⚠️ MODIFIÉ : restaure la dernière page visitée au lieu de forcer 'home'
+        window.onload = async function() {
+            await loadDataFromSupabase();
+            subscribeToRealtime();
+
+            const saved = getLastPage();
+            if (saved && saved.pageId) {
+                if (saved.pageId === 'detail' && saved.extraParam) {
+                    // Vérifie que le bien existe toujours, sinon fallback sur 'offers'
+                    const exists = propertiesData.find(p => p.id === saved.extraParam);
+                    if (exists) {
+                        navigateTo('detail', saved.extraParam);
+                    } else {
+                        navigateTo('offers');
+                    }
+                } else if (saved.pageId === 'detail') {
+                    // Cas rare : detail sans propId → fallback
+                    navigateTo('offers');
+                } else {
+                    navigateTo(saved.pageId);
+                }
+            } else {
+                navigateTo('home');
+            }
+
             startGlobalTimerInterval();
         };
     </script>

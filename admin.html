@@ -443,11 +443,27 @@
         let clientRequestsData = [];
         let adminCredentials = JSON.parse(localStorage.getItem('prevux_admin_creds')) || { username: 'admin', password: '123' };
 
+        // ⚠️ NOUVEAU : gestion de la session persistante (survit au refresh dans le même onglet)
+        const ADMIN_SESSION_KEY = 'prevux_admin_session';
+        function isAdminSessionActive() {
+            return sessionStorage.getItem(ADMIN_SESSION_KEY) === 'active';
+        }
+        function setAdminSession(active) {
+            if (active) {
+                sessionStorage.setItem(ADMIN_SESSION_KEY, 'active');
+            } else {
+                sessionStorage.removeItem(ADMIN_SESSION_KEY);
+            }
+        }
+
         // --- CHARGEMENT ET SYNCHRONISATION SUPABASE ---
+        // ⚠️ ZONE 1 : persiste les defaults si table vide + remonte les erreurs
         async function loadAdminDataFromSupabase() {
             try {
                 const { data: propData, error: propError } = await supabaseClient.from('properties').select('*');
-                if (!propError && propData && propData.length > 0) {
+                if (propError) throw propError;
+
+                if (propData && propData.length > 0) {
                     propertiesData = propData.map(p => ({
                         ...p,
                         images: typeof p.images === 'string' ? JSON.parse(p.images) : (p.images || []),
@@ -455,6 +471,10 @@
                     }));
                 } else {
                     propertiesData = defaultProperties;
+                    const res = await savePropertiesToSupabase();
+                    if (!res.success) {
+                        console.warn("Impossible de pousser les données par défaut :", res.error);
+                    }
                 }
 
                 const { data: reqData, error: reqError } = await supabaseClient.from('requests').select('*');
@@ -462,16 +482,16 @@
                     clientRequestsData = reqData;
                 }
             } catch (err) {
-                console.warn("Erreur chargement Supabase:", err);
+                console.error("Erreur chargement Supabase:", err);
                 propertiesData = defaultProperties;
             }
         }
 
+        // ⚠️ ZONE 2 : remonte les erreurs via {success, error}
         async function savePropertiesToSupabase() {
             try {
-                // Upsert global des propriétés
                 for (const prop of propertiesData) {
-                    await supabaseClient.from('properties').upsert([{
+                    const { error } = await supabaseClient.from('properties').upsert([{
                         id: prop.id,
                         title: prop.title,
                         type: prop.type,
@@ -493,9 +513,12 @@
                         flashMediaLink: prop.flashMediaLink,
                         description: prop.description
                     }]);
+                    if (error) throw error;
                 }
+                return { success: true };
             } catch (err) {
                 console.error("Erreur de sauvegarde Supabase:", err);
+                return { success: false, error: err };
             }
         }
 
@@ -507,6 +530,7 @@
             }
         }
 
+        // ⚠️ MODIFIÉ : ajoute la persistance de session
         window.handleAdminLogin = async function(e) {
             e.preventDefault();
             const u = document.getElementById('login-user').value;
@@ -514,6 +538,7 @@
 
             if (u === adminCredentials.username && p === adminCredentials.password) {
                 await loadAdminDataFromSupabase();
+                setAdminSession(true); // ← persiste la session pour le refresh
                 document.getElementById('page-admin-login').classList.add('hidden');
                 document.getElementById('page-admin-dashboard').classList.remove('hidden');
                 renderAdminTable();
@@ -523,7 +548,9 @@
             }
         };
 
+        // ⚠️ MODIFIÉ : efface la session au logout
         window.adminLogout = function() {
+            setAdminSession(false); // ← supprime la session
             document.getElementById('page-admin-dashboard').classList.add('hidden');
             document.getElementById('page-admin-login').classList.remove('hidden');
             document.getElementById('login-user').value = '';
@@ -587,23 +614,25 @@
             `).join('');
         }
 
-        window.changePropertyStatus = function(id, newStatus) {
+        // ⚠️ ZONE 3 : async + alerte si échec
+        window.changePropertyStatus = async function(id, newStatus) {
             const prop = propertiesData.find(p => p.id === id);
-            if (prop) {
-                prop.status = newStatus;
-                savePropertiesToSupabase();
-                renderAdminTable();
-            }
+            if (!prop) return;
+            prop.status = newStatus;
+            const r = await savePropertiesToSupabase();
+            if (!r.success) alert("Erreur de mise à jour du statut : " + (r.error?.message || ""));
+            renderAdminTable();
         };
 
-        window.toggleFlashStatus = function(id, isFlash) {
+        // ⚠️ ZONE 4 : async + alerte si échec
+        window.toggleFlashStatus = async function(id, isFlash) {
             const prop = propertiesData.find(p => p.id === id);
-            if (prop) {
-                prop.isFlash = isFlash;
-                if (isFlash && !prop.flashPrice) prop.flashPrice = prop.price;
-                savePropertiesToSupabase();
-                renderAdminTable();
-            }
+            if (!prop) return;
+            prop.isFlash = isFlash;
+            if (isFlash && !prop.flashPrice) prop.flashPrice = prop.price;
+            const r = await savePropertiesToSupabase();
+            if (!r.success) alert("Erreur de mise à jour Flash : " + (r.error?.message || ""));
+            renderAdminTable();
         };
 
         // --- GESTION DE LA MODALE ET DU TÉLÉCHARGEMENT PDF ---
@@ -627,11 +656,10 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
-            // En-tête du document
-            doc.setFillColor(15, 44, 89); // Couleur Navy 900
+            doc.setFillColor(15, 44, 89);
             doc.rect(0, 0, 210, 28, 'F');
             
-            doc.setTextColor(255, 224, 102); // Or
+            doc.setTextColor(255, 224, 102);
             doc.setFontSize(16);
             doc.setFont("helvetica", "bold");
             doc.text("PREVUX AGENCY", 14, 12);
@@ -642,7 +670,6 @@
             
             let currentY = 38;
 
-            // Section 1 : Demandes & Propositions Clients
             if (includeRequests) {
                 doc.setTextColor(15, 44, 89);
                 doc.setFontSize(12);
@@ -675,7 +702,6 @@
                 currentY = doc.lastAutoTable.finalY + 12;
             }
 
-            // Section 2 : Catalogue des Offres
             if (includeOffers) {
                 if (currentY > 230) {
                     doc.addPage();
@@ -708,7 +734,6 @@
                 });
             }
 
-            // Pied de page sur toutes les pages
             const pageCount = doc.internal.getNumberOfPages();
             for (let i = 1; i <= pageCount; i++) {
                 doc.setPage(i);
@@ -775,14 +800,15 @@
             document.getElementById('modal-add-property').classList.add('hidden');
         };
 
-        window.handleSavePropertySubmit = function(e) {
+        // ⚠️ ZONE 5 : async + alerte succès/échec réelle
+        window.handleSavePropertySubmit = async function(e) {
             e.preventDefault();
             const editId = document.getElementById('edit-prop-id').value;
             const fileInput = document.getElementById('new-prop-images-file');
             const latVal = parseFloat(document.getElementById('new-prop-lat').value) || 5.3500;
             const lngVal = parseFloat(document.getElementById('new-prop-lng').value) || -3.9500;
 
-            const processSave = (imagesArray) => {
+            const processSave = async (imagesArray) => {
                 if (editId) {
                     const prop = propertiesData.find(p => p.id === editId);
                     if (prop) {
@@ -832,10 +858,14 @@
                     propertiesData.unshift(newProp);
                 }
 
-                savePropertiesToSupabase();
-                closeAddPropertyModal();
-                renderAdminTable();
-                alert("Offre sauvegardée avec succès sur Supabase !");
+                const result = await savePropertiesToSupabase();
+                if (result.success) {
+                    closeAddPropertyModal();
+                    renderAdminTable();
+                    alert("✅ Offre sauvegardée avec succès en base !");
+                } else {
+                    alert("❌ Échec de la sauvegarde : " + (result.error?.message || "erreur inconnue"));
+                }
             };
 
             if (fileInput.files && fileInput.files.length > 0) {
@@ -851,14 +881,15 @@
                         reader.readAsDataURL(file);
                     }));
                 });
-                Promise.all(readers).then(() => processSave(base64Images));
+                await Promise.all(readers);
+                await processSave(base64Images);
             } else {
                 let existingImages = [];
                 if (editId) {
                     const existing = propertiesData.find(p => p.id === editId);
                     if (existing) existingImages = existing.images;
                 }
-                processSave(existingImages);
+                await processSave(existingImages);
             }
         };
 
@@ -895,7 +926,8 @@
             document.getElementById('modal-flash-manager').classList.add('hidden');
         };
 
-        window.saveFlashOffers = function() {
+        // ⚠️ ZONE 6 : async + alerte succès/échec réelle
+        window.saveFlashOffers = async function() {
             propertiesData.forEach(p => {
                 const chk = document.getElementById(`flash-check-${p.id}`);
                 const priceInput = document.getElementById(`flash-price-${p.id}`);
@@ -909,10 +941,14 @@
                     if (linkInput) p.flashMediaLink = linkInput.value;
                 }
             });
-            savePropertiesToSupabase();
-            closeFlashManagerModal();
-            renderAdminTable();
-            alert("Ventes Flash mises à jour avec succès sur Supabase !");
+            const r = await savePropertiesToSupabase();
+            if (r.success) {
+                closeFlashManagerModal();
+                renderAdminTable();
+                alert("✅ Ventes Flash mises à jour !");
+            } else {
+                alert("❌ Échec : " + (r.error?.message || ""));
+            }
         };
 
         window.openChangeCredentialsModal = function() {
@@ -941,8 +977,29 @@
             localStorage.setItem('prevux_admin_creds', JSON.stringify(adminCredentials));
             closeChangeCredentialsModal();
             alert("Identifiants modifiés. Veuillez vous re-connecter.");
-            adminLogout();
+            adminLogout(); // ← adminLogout appelle maintenant setAdminSession(false)
         };
+
+        // ⚠️ NOUVEAU : Restauration de la session au chargement de la page
+        // Si l'utilisateur avait déjà ouvert l'admin dans cet onglet (session active),
+        // on réaffiche directement le dashboard sans repasser par la page de login.
+        (async function restoreAdminSession() {
+            if (!isAdminSessionActive()) return;
+
+            try {
+                await loadAdminDataFromSupabase();
+                document.getElementById('page-admin-login').classList.add('hidden');
+                document.getElementById('page-admin-dashboard').classList.remove('hidden');
+                renderAdminTable();
+                renderAdminRequestsTable();
+            } catch (err) {
+                console.error("Erreur restauration session admin :", err);
+                // En cas d'erreur, on retombe sur la page de login par sécurité
+                setAdminSession(false);
+                document.getElementById('page-admin-login').classList.remove('hidden');
+                document.getElementById('page-admin-dashboard').classList.add('hidden');
+            }
+        })();
     </script>
 </body>
 </html>
