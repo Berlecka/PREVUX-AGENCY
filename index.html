@@ -877,88 +877,24 @@
         const SUPABASE_KEY = 'sb_publishable_Tt5HwNpxtY4p3vED3M90AA_2PVXsTaf';
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        const nowMs = Date.now();
-        let defaultProperties = [
-            {
-                id: 'prop-1',
-                title: 'Parcelle Sécurisée 500m² avec ACD',
-                type: 'Terrain Nu',
-                transaction: 'Vente',
-                city: 'Bingerville',
-                price: '18 000 000 FCFA',
-                surface: '500 m²',
-                rooms: '-',
-                doc: 'ACD',
-                docRef: 'ACD N° 2023-4521',
-                status: 'Disponible',
-                images: ['https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80'],
-                videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-                coords: [5.3550, -3.8860],
-                featured: true,
-                isFlash: true,
-                flashPrice: '16 500 000 FCFA',
-                flashExpiry: new Date(nowMs + 48 * 3600 * 1000).toISOString().slice(0, 16),
-                flashMediaLink: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-                description: 'Magnifique parcelle plate prête pour construction immédiate située dans un quartier résidentiel en pleine expansion à Bingerville. Document ACD disponible à la vérification.'
-            },
-            {
-                id: 'prop-2',
-                title: 'Villa Duplex HAUT STANDING 5 Pièces',
-                type: 'Villa Duplex',
-                transaction: 'Vente',
-                city: 'Cocody',
-                price: '145 000 000 FCFA',
-                surface: '450 m²',
-                rooms: '5 Pièces',
-                doc: 'Titre Foncier',
-                docRef: 'TF N° 10842',
-                status: 'Disponible',
-                images: ['https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=80'],
-                videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-                coords: [5.3600, -3.9600],
-                featured: true,
-                isFlash: true,
-                flashPrice: '135 000 000 FCFA',
-                flashExpiry: new Date(nowMs + 18 * 3600 * 1000).toISOString().slice(0, 16),
-                flashMediaLink: 'https://www.tiktok.com',
-                description: 'Somptueuse villa duplex neuve avec piscine, garage 3 véhicules, suite parentale avec dressing, cuisine équipée et finitions italiennes à Cocody Angré.'
-            },
-            {
-                id: 'prop-3',
-                title: 'Magasin Bord de Voie 80m²',
-                type: 'Magasin',
-                transaction: 'Cession',
-                city: 'Yopougon',
-                price: '12 000 000 FCFA',
-                surface: '80 m²',
-                rooms: '1 Pièce + Mezzanine',
-                doc: 'ACD',
-                docRef: 'ACD N° 2022-1102',
-                status: 'Disponible',
-                images: ['https://images.unsplash.com/photo-1628624747186-a941c476b7ef?auto=format&fit=crop&w=800&q=80'],
-                videoUrl: '',
-                coords: [5.3400, -4.0800],
-                featured: true,
-                isFlash: false,
-                description: 'Magasin commercial idéalement situé avec forte visibilité à Yopougon, comprenant une mezzanine aménagée.'
-            }
-        ];
-
         let propertiesData = [];
         let clientRequestsData = [];
 
-        // --- CHARGEMENT DEPUIS SUPABASE ---
+        // --- CHARGEMENT DYNAMIQUE EN DIRECT DEPUIS SUPABASE ---
         async function loadDataFromSupabase() {
             try {
-                const { data: propData, error: propError } = await supabaseClient.from('properties').select('*');
-                if (!propError && propData && propData.length > 0) {
+                const { data: propData, error: propError } = await supabaseClient
+                    .from('properties')
+                    .select('*')
+                    .neq('status', 'Caché'); // Exclut les biens masqués ou archivés dans l'admin
+
+                if (!propError && propData) {
                     propertiesData = propData.map(p => ({
                         ...p,
                         images: typeof p.images === 'string' ? JSON.parse(p.images) : (p.images || []),
-                        coords: typeof p.coords === 'string' ? JSON.parse(p.coords) : (p.coords || [5.35, -3.95])
+                        coords: typeof p.coords === 'string' ? JSON.parse(p.coords) : (p.coords || [5.35, -3.95]),
+                        isFlash: p.is_flash !== undefined ? p.is_flash : p.isFlash
                     }));
-                } else {
-                    propertiesData = defaultProperties;
                 }
 
                 const { data: reqData, error: reqError } = await supabaseClient.from('requests').select('*');
@@ -966,10 +902,12 @@
                     clientRequestsData = reqData;
                 }
             } catch (err) {
-                console.warn("Mode hors-ligne / Erreur Supabase, utilisation des valeurs par défaut:", err);
-                propertiesData = defaultProperties;
+                console.error("Erreur de récupération des données Supabase sur l'index :", err);
             }
-            navigateTo('home');
+
+            // Rafraîchir l'affichage sur la page d'accueil après chargement
+            renderFlashOffers();
+            renderFeaturedProperties();
         }
 
         async function saveRequestToSupabase(newReq) {
@@ -1001,7 +939,7 @@
             {
                 title: "4. Transactions Immobilières",
                 icon: "fa-file-contract",
-                description: "<p>Réalisation de toutes opérations d’achat, vente, location, cession, acquisition ou valorisation de biens immobiliers, terrains, propriétés bâties ou non bâties sur l'ensemble du territoire ivoirien.</p><p>Garantie transactionnelle, sécurisation des règlements et suivi juridique complet jusqu'à la signature finale.</p>"
+                description: "<p>Réalisation de toutes opérations d’achat, vente, location, cession, acquisition ou valorisation de biens immobiliers, terrains, propriétés bâties ou non bâtis sur l'ensemble du territoire ivoirien.</p><p>Garantie transactionnelle, sécurisation des règlements et suivi juridique complet jusqu'à la signature finale.</p>"
             },
             {
                 title: "5. Gestion Immobilière de Luxe",
@@ -1732,8 +1670,10 @@
             }, 1000);
         }
 
+        // Lancement au chargement de la page
         window.onload = function() {
             loadDataFromSupabase();
+            navigateTo('home');
             startGlobalTimerInterval();
         };
     </script>
